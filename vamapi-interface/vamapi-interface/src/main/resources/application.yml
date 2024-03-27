@@ -1,0 +1,8 @@
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+vamapi:
+  client:
+    access-key: vampon
+    secret-key: qwertyuiop
