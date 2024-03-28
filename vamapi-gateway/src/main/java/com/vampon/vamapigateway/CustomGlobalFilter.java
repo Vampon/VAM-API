@@ -83,7 +83,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String timestamp = headers.getFirst("timestamp");
         String sign = headers.getFirst("sign");
         String body = headers.getFirst("body");
-        //todo:这里实际上应该需要先去数据库中查询一下是否已分配给该用户（done）
+        // 这里实际上应该需要先去数据库中查询一下是否已分配给该用户（done）
         User invokeUser = null;
         try {
             invokeUser = innerUserService.getInvokeUser(accessKey);
@@ -96,7 +96,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         // 基于Redisson对单个用户每秒调用次数限流
         // redisLimiterManager.doRateLimit("invoke_" + invokeUser.getId());
         //todo:这里不应该使用魔法值vampon
-        if(!"vampon".equals(accessKey) ) //tips:why flip?
+        if(!"vampon".equals(accessKey) )
         {
             return handleNoAuth(response);
         }
@@ -119,7 +119,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         hashMap.put("nonce",nonce);
         hashMap.put("timestamp",timestamp);
         hashMap.put("body",body);
-        //todo:实际情况中从数据库中查出secretKey（done）
+        // 从数据库中查出secretKey（done）
         String secretKey = invokeUser.getSecretKey();
         String serverSign = SignUtils.getSign(hashMap, secretKey);
         if(sign == null || !serverSign.equals(sign))
@@ -128,9 +128,9 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         }
 
         // 请求的模拟接口是否存在
-        // todo: 从数据库中查询模拟接口是否存在，以及请求方法是否匹配（done）
-        // todo: 因为网关项目没有引入mybatis等操作数据库的方法，最好由backend提供接口，直接调用（done）
-
+        // 从数据库中查询模拟接口是否存在，以及请求方法是否匹配（done）
+        // 因为网关项目没有引入mybatis等操作数据库的方法，最好由backend提供接口，直接调用（done）
+        // todo:这里是通过path和method来查询接口是否存在的，这造成个bug，也就是端口号8123和8090不匹配的错误
         InterfaceInfo interfaceInfo = null;
         try {
             interfaceInfo = innerInterfaceInfoService.getInterfaceInfo(path, method);
@@ -140,14 +140,14 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         if(interfaceInfo == null){
             return handleNoAuth(response);
         }
-        //todo: 校验是否还有调用次数
+        // todo: 校验是否还有调用次数
         // 请求转发，调用模拟接口 + 响应日志（done）
         return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId());
 
 //        Mono<Void> filter = chain.filter(exchange);
 //        // 响应日志
 //        log.info("相应" + response.getStatusCode());
-//        // todo: 调用成功，调用接口次数 + 1
+//        // 调用成功，调用接口次数 + 1
 //        if (response.getStatusCode() == HttpStatus.OK)
 //        {
 //
