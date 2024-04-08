@@ -27,7 +27,14 @@ public class RedisLimiterManager {
     public void doRateLimit(String key) {
         // 创建一个名称为user_limiter的限流器，每秒最多访问 2 次
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
-        rateLimiter.trySetRate(RateType.OVERALL, 2, 1, RateIntervalUnit.SECONDS);
+        /**
+         * trySetRate() 方法用于设置速率限制器的速率限制参数。
+         * RateType.OVERALL 表示设置速率限制器的整体速率限制，即整个速率限制器受到限制。
+         * 1 是限制的速率值，表示每秒最多允许通过 1 个请求。
+         * 1 是令牌发放的初始数量，表示在开始时速率限制器中有 1 个令牌可用。
+         * RateIntervalUnit.SECONDS 表示速率的时间单位，这里是以秒为单位。
+         */
+        rateLimiter.trySetRate(RateType.OVERALL, 1, 1, RateIntervalUnit.SECONDS);
         // 每当一个操作来了后，请求一个令牌
         boolean canOp = rateLimiter.tryAcquire(1);
         if (!canOp) {
