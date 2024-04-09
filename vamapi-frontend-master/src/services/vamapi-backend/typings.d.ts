@@ -191,6 +191,7 @@ declare namespace API {
     path?: string;
     url?: string;
     userRequestParams?: string;
+    // RequestParams?: Record<string, any>;
   };
 
   type InterfaceInfoUpdateRequest = {

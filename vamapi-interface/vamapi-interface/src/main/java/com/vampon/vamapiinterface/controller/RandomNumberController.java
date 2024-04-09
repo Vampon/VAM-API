@@ -20,7 +20,7 @@ public class RandomNumberController {
 
 
 
-    @PostMapping("/random_number")
+    @GetMapping("/random_number")
     public BaseResponse<String> getRandomNumberByPost(@RequestParam Integer range)
     {
         Random random = new Random();

@@ -47,7 +47,10 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     private RedisLimiterManager redisLimiterManager;
 
     private static final List<String> IP_WHERE_LIST = Arrays.asList("127.0.0.1");//测试白名单
+
+    //todo:将魔法值去除，改成可通过配置文件配置
     public static final String INTERFACE_HOST = "http://localhost:8123";
+    public static final String GATEWAY_HOST = "http://localhost:8090";
     /**
      * 全局过滤
      * @param exchange
@@ -59,7 +62,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         // 用户发送请求到API网关（默认能达到这里就已经算完成）
         // 请求日志
         ServerHttpRequest request = exchange.getRequest();
-        String path = INTERFACE_HOST + request.getPath().value();
+        String path = GATEWAY_HOST + request.getPath().value();
         String method = request.getMethod().toString();
         log.info("请求唯一标识" + request.getId());
         log.info("请求路径" + path);
