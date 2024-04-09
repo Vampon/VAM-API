@@ -1,71 +1,123 @@
+import CodeHighlighting from '@/components/CodeHighlighting';
+import { interfaceMethodList } from '@/enum/interfaceInfoEnum';
+import { EditableProTable, ProForm } from '@ant-design/pro-components';
 import '@umijs/max';
-import React from 'react';
-import {Button, Empty, Form, Select, Space, Spin} from "antd";
-import {DEFAULT_ADD_FIELD, requestParam} from "@/pages/InterfaceInfo/components/CodeTemplate";
-import CodeHighlighting from "@/components/CodeHighlighting";
-import Search from "antd/es/input/Search";
-import ParamsTable from "@/components/ParamsTable";
+import {Button, Empty, Input, Select, Space, Spin, Tooltip} from 'antd';
+import React, {useEffect, useState} from 'react';
 
 export type Props = {
-  data?: API.InterfaceInfo;
-  temporaryParams: any
-  requestExampleActiveTabKey: string
-  onSearch: (values: any) => void;
-  paramsTableChange: (values: any) => void;
-  result?: string
-  form: any
-  resultLoading: boolean
+  toolsInputPlaceholderValue: string;
+  toolsInputValue: string;
+  toolsInputDoubleClick: () => void;
+  toolsInputChange: (e: any) => void;
+  submitTools: () => void;
+  toolsProEditTableDefaultData: any;
+  toolsProEditTableData: any;
+  setToolsProEditTableData: (data: any) => void;
+  handleProEditTableAdd: (data: any) => void;
+  requestParam: any;
+  temporaryParams: any;
+  toolsParamsColumns: any;
+  data: any;
+  toolsParams: any;
+  toolsResult?: string;
+  requestExampleActiveTabKey: string;
+  toolsResultLoading: boolean;
 };
+const { Option } = Select;
+
+
 const ToolsTab: React.FC<Props> = (props) => {
-  const {onSearch, data,form, temporaryParams, paramsTableChange, result, resultLoading, requestExampleActiveTabKey} = props;
-  const selectAfter = (
-    <Select
-      disabled
-      defaultValue={data?.method}
-      style={{width: 120}}
-      options={[
-        {value: 'GET', label: 'GET', disabled: true},
-        {value: 'POST', label: 'POST', disabled: true},
-        {value: 'PUT', label: 'PUT', disabled: true},
-        {value: 'DELETE', label: 'DELETE', disabled: true},
-      ]}
-    />
+  const {
+    toolsInputPlaceholderValue,
+    toolsInputValue,
+    toolsInputDoubleClick,
+    toolsInputChange,
+    submitTools,
+    toolsProEditTableDefaultData,
+    toolsProEditTableData,
+    setToolsProEditTableData,
+    handleProEditTableAdd,
+    toolsParamsColumns,
+    data,
+    toolsResult,
+    requestExampleActiveTabKey,
+    toolsResultLoading,
+  } = props;
+  const selectBefore = (
+    <Select defaultValue={data?.method} disabled={true}>
+      <Option value={interfaceMethodList.GET.text}>GET</Option>
+      <Option value={interfaceMethodList.POST.text}>POST</Option>
+      <Option value={interfaceMethodList.PUT.text}>PUT</Option>
+      <Option value={interfaceMethodList.DELETE.text}>DELETE</Option>
+    </Select>
   );
-  return <>
-    <Form
-      form={form}
-      className="form-input"
-      onFinish={(values) => onSearch?.(values)}
-      scrollToFirstError
-      onReset={() => {
-        form.resetFields(['requestParams']);
-      }}
-    >
-      <div style={{display: 'flex', justifyContent: 'center', justifyItems: 'center',}}>
-        <Search size={"large"} readOnly style={{maxWidth: 600}} value={data?.url} addonBefore={selectAfter}
-                enterButton="发起请求" onSearch={form.submit}/>
-      </div>
-      <p className="highlightLine" style={{marginTop: 25}}>请求参数设置：</p>
-      <Form.Item name={"requestParams"}>
-        <ParamsTable value={temporaryParams} onChange={(value: any) => {
-          paramsTableChange?.(value)
-        }} defaultNewColumn={DEFAULT_ADD_FIELD} column={requestParam}/>
-      </Form.Item>
-      <Form.Item>
-        <Space size="large" wrap>
-          <Button type="primary" htmlType="reset" style={{width: 180}}>
-            重置
-          </Button>
-        </Space>
-      </Form.Item>
-    </Form>
-    <p className="highlightLine" style={{marginTop: 25}}>返回结果：</p>
-    <Spin spinning={resultLoading}>
-      {result ?
-        <CodeHighlighting codeString={result} language={requestExampleActiveTabKey}/>
-        : <Empty description={"未发起调用，暂无请求信息"}/>
-      }
-    </Spin>
-  </>
+  useEffect(() => {
+    toolsInputDoubleClick();
+  }, []);
+  return (
+    <>
+      <ProForm style={{ width: '100%' }} submitter={false}>
+        <ProForm.Group style={{ width: '100%' }}>
+          <ProForm.Item label={<p className="highlightLine"> 请求地址</p>} style={{ width: '100%' }}>
+
+            <Space.Compact style={{ width: '800px' }} onFocus={() =>{}} onBlur={() =>{}}>
+
+              <Input
+                size={'large'}
+                addonBefore={selectBefore}
+                placeholder={toolsInputPlaceholderValue}
+                value={toolsInputPlaceholderValue}
+                onDoubleClick={toolsInputDoubleClick}
+                onChange={toolsInputChange}
+                disabled={true}
+              />
+              <Button name={'send'} type="primary" size={'large'} onClick={submitTools}>
+                发送
+              </Button>
+            </Space.Compact>
+          </ProForm.Item>
+          <ProForm.Item
+            label={<p className="highlightLine"> 请求参数</p>}
+            name="dataSource"
+            trigger="onValuesChange"
+          >
+            <Button type={'default'} onClick={() => setToolsProEditTableData([])}>清空</Button>
+            <br/>
+            <EditableProTable<toolsParams>
+              rowKey="id"
+              toolBarRender={false}
+              columns={toolsParamsColumns}
+              defaultData={toolsProEditTableDefaultData}
+              value={toolsProEditTableData}
+              onChange={setToolsProEditTableData}
+              loading={false}
+              onValuesChange={setToolsProEditTableData}
+              recordCreatorProps={{
+                newRecordType: 'dataSource',
+                position: 'bottom',
+                onRecordAdd: handleProEditTableAdd,
+                record: () => ({
+                  id: (Math.random() * 1000000).toFixed(0),
+                  addonBefore: 'ccccccc',
+                  decs: 'testdesc',
+                }),
+              }}
+              editable={{
+                type: 'multiple',
+              }}
+            />
+            <p className="highlightLine" style={{marginTop: 25}}>返回结果</p>
+            <Spin spinning={toolsResultLoading}>
+              {toolsResult ?
+                <CodeHighlighting codeString={toolsResult} language={requestExampleActiveTabKey}/>
+                : <Empty description={"未发起调用，暂无请求信息"}/>
+              }
+            </Spin>
+          </ProForm.Item>
+        </ProForm.Group>
+      </ProForm>
+    </>
+  );
 };
 export default ToolsTab;

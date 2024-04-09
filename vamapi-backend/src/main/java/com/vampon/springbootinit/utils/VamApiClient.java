@@ -52,32 +52,65 @@ public class VamApiClient {
      * @param method 接口使用方法
      * @return 接口调用结果
      */
-    public String invokeInterface(long id,String params, String url, String method,String path)  {
+    public String invokeInterface(long id, String params, String url, String method, String path) {
         String result;
-        log.info("SDK正在转发至GATEWAY_HOST:{}",GATEWAY_HOST);
-        try(
-                HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + path)
-                        // 处理中文编码
-                        .header("Accept-Charset", CharsetUtil.UTF_8)
-                        .addHeaders(getHeaderMap(params))
-                        .body(params)
-                        .execute())
-        {
-            String body = httpResponse.body();
-            /*
-            // 可以在SDK处理接口404的情况
-            if(httpResponse.getStatus()==404){
-                body = String.format("{\"code\": %d,\"msg\":\"%s\",\"data\":\"%s\"}",
-                        httpResponse.getStatus(), "接口请求路径不存在", "null");
-                log.info("响应结果：" + body);
+        log.info("SDK正在转发至GATEWAY_HOST:{}", GATEWAY_HOST);
+        try {
+            HttpRequest httpRequest;
+            if ("GET".equalsIgnoreCase(method)) {
+                httpRequest = HttpRequest.get(GATEWAY_HOST + path);
+            } else if ("POST".equalsIgnoreCase(method)) {
+                httpRequest = HttpRequest.post(GATEWAY_HOST + path);
+            } else {
+                throw new IllegalArgumentException("Unsupported HTTP method: " + method);
             }
-            */
+
+            HttpResponse httpResponse = httpRequest
+                    // 处理中文编码
+                    .header("Accept-Charset", CharsetUtil.UTF_8)
+                    .addHeaders(getHeaderMap(params))
+                    .body(params)
+                    .execute();
+
+            String body = httpResponse.body();
             // 将返回的JSON结果格式化，其实就是加换行符
-            result=JSONUtil.formatJsonStr(body);
+            result = JSONUtil.formatJsonStr(body);
+        } catch (Exception e) {
+            log.error("HTTP请求错误", e);
+            // 在这里可以根据实际需求处理异常情况
+            result = "{\"error\": \"HTTP请求错误\"}";
         }
-        log.info("SDK调用接口完成，响应数据：{}",result);
+
+        log.info("SDK调用接口完成，响应数据：{}", result);
         return result;
     }
+
+//    public String invokeInterface(long id,String params, String url, String method,String path)  {
+//        String result;
+//        log.info("SDK正在转发至GATEWAY_HOST:{}",GATEWAY_HOST);
+//        try(
+//                HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + path)
+//                        // 处理中文编码
+//                        .header("Accept-Charset", CharsetUtil.UTF_8)
+//                        .addHeaders(getHeaderMap(params))
+//                        .body(params)
+//                        .execute())
+//        {
+//            String body = httpResponse.body();
+//            /*
+//            // 可以在SDK处理接口404的情况
+//            if(httpResponse.getStatus()==404){
+//                body = String.format("{\"code\": %d,\"msg\":\"%s\",\"data\":\"%s\"}",
+//                        httpResponse.getStatus(), "接口请求路径不存在", "null");
+//                log.info("响应结果：" + body);
+//            }
+//            */
+//            // 将返回的JSON结果格式化，其实就是加换行符
+//            result=JSONUtil.formatJsonStr(body);
+//        }
+//        log.info("SDK调用接口完成，响应数据：{}",result);
+//        return result;
+//    }
 
 //    public String getNameByGet(String name)
 //    {
