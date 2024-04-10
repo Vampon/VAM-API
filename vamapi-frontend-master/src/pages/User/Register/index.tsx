@@ -72,7 +72,7 @@ const Register: React.FC = () => {
             }
           }}
           logo={<img alt="logo" src="/logo.svg" />}
-          title="VAM接口"
+          title="VAM在线接口"
           subTitle={'API 开放平台'}
           initialValues={{
             autoLogin: true,
