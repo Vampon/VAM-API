@@ -35,7 +35,7 @@ export async function deleteUserInterfaceInfoUsingPost(
 /** getUserInterfaceInfoById GET /api/userInterfaceInfo/get */
 export async function getUserInterfaceInfoByIdUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
-  params: API.getUserInterfaceInfoByIdUsingGetParams,
+  params: API.getUserInterfaceInfoByIdUsingGETParams,
   options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseUserInterfaceInfo_>('/api/userInterfaceInfo/get', {
@@ -50,7 +50,7 @@ export async function getUserInterfaceInfoByIdUsingGet(
 /** listUserInterfaceInfo GET /api/userInterfaceInfo/list */
 export async function listUserInterfaceInfoUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
-  params: API.listUserInterfaceInfoUsingGetParams,
+  params: API.listUserInterfaceInfoUsingGETParams,
   options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseListUserInterfaceInfo_>('/api/userInterfaceInfo/list', {
@@ -65,7 +65,7 @@ export async function listUserInterfaceInfoUsingGet(
 /** listUserInterfaceInfoByPage GET /api/userInterfaceInfo/list/page */
 export async function listUserInterfaceInfoByPageUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
-  params: API.listUserInterfaceInfoByPageUsingGetParams,
+  params: API.listUserInterfaceInfoByPageUsingGETParams,
   options?: { [key: string]: any },
 ) {
   return request<API.BaseResponsePageUserInterfaceInfo_>('/api/userInterfaceInfo/list/page', {

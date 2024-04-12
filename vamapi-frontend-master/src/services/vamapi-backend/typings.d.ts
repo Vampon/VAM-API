@@ -129,27 +129,27 @@ declare namespace API {
     id?: number;
   };
 
-  type getInterfaceInfoByIdUsingGetParams = {
+  type getInterfaceInfoByIdUsingGETParams = {
     /** id */
     id?: number;
   };
 
-  type getPostVOByIdUsingGetParams = {
+  type getPostVOByIdUsingGETParams = {
     /** id */
     id?: number;
   };
 
-  type getUserByIdUsingGetParams = {
+  type getUserByIdUsingGETParams = {
     /** id */
     id?: number;
   };
 
-  type getUserInterfaceInfoByIdUsingGetParams = {
+  type getUserInterfaceInfoByIdUsingGETParams = {
     /** id */
     id?: number;
   };
 
-  type getUserVOByIdUsingGetParams = {
+  type getUserVOByIdUsingGETParams = {
     /** id */
     id?: number;
   };
@@ -191,7 +191,6 @@ declare namespace API {
     path?: string;
     url?: string;
     userRequestParams?: string;
-    // RequestParams?: Record<string, any>;
   };
 
   type InterfaceInfoUpdateRequest = {
@@ -223,22 +222,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type RequestParamsField = {
-    desc?: string;
-    fieldName?: string;
-    id?: string;
-    required?: string;
-    type?: string;
-  };
-
-  type ResponseParamsField = {
-    desc?: string;
-    fieldName?: string;
-    id?: string;
-    type?: string;
-  };
-
-  type listInterfaceInfoByPageUsingGetParams = {
+  type listInterfaceInfoByPageUsingGETParams = {
     current?: number;
     description?: string;
     id?: number;
@@ -254,7 +238,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type listInterfaceInfoUsingGetParams = {
+  type listInterfaceInfoUsingGETParams = {
     current?: number;
     description?: string;
     id?: number;
@@ -270,7 +254,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type listUserInterfaceInfoByPageUsingGetParams = {
+  type listUserInterfaceInfoByPageUsingGETParams = {
     current?: number;
     id?: number;
     interfaceInfoId?: number;
@@ -283,7 +267,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type listUserInterfaceInfoUsingGetParams = {
+  type listUserInterfaceInfoUsingGETParams = {
     current?: number;
     id?: number;
     interfaceInfoId?: number;
@@ -296,7 +280,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type listUserUsingGetParams = {
+  type listUserUsingGETParams = {
     current?: number;
     id?: number;
     mpOpenId?: string;
@@ -483,7 +467,7 @@ declare namespace API {
     userId?: number;
   };
 
-  type uploadFileUsingPostParams = {
+  type uploadFileUsingPOSTParams = {
     biz?: string;
   };
 

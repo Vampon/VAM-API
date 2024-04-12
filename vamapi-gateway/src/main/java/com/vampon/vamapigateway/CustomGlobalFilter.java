@@ -143,7 +143,15 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         if(interfaceInfo == null){
             return handleNoAuth(response);
         }
-        // todo: 校验是否还有调用次数
+        // todo: 校验是否还有调用次数(done) 但是调用失败没有提示，这个得再看看看，它就卡在那里
+        try {
+            int leftNum = innerUserInterfaceInfoService.getUserInterfaceInfoLeftNum(interfaceInfo.getId(), invokeUser.getId());
+            if(leftNum <= 0){
+                return handleNoAuth(response);
+            }
+        } catch (Exception e) {
+            log.error("getUserInterfaceInfoLeftNum error", e);
+        }
         // 请求转发，调用模拟接口 + 响应日志（done）
         return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId());
 

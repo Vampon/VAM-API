@@ -10,10 +10,18 @@ import {
 } from '@/pages/InterfaceInfo/components/CodeTemplate';
 import ToolsTab from '@/pages/InterfaceInfo/components/ToolsTab';
 import {
+  deleteInterfaceInfoUsingPost,
   // getInterfaceInfoVoByIdUsingGet,
   getInterfaceInfoByIdUsingGet,
   invokeInterfaceInfoUsingPost,
 } from '@/services/vamapi-backend/interfaceInfoController';
+import {
+  addUserInterfaceInfoUsingPost
+} from '@/services/vamapi-backend/userInterfaceInfoController';
+import {
+  getLoginUserUsingGet,
+} from '@/services/vamapi-backend/userController';
+import {values} from 'lodash';
 import { useParams } from '@@/exports';
 import {
   BugOutlined,
@@ -22,10 +30,11 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProColumns } from '@ant-design/pro-components';
-import { Badge, Card, Descriptions, Form, message, Select, Table, Tabs } from 'antd';
+import {Badge, Button, Card, Descriptions, Form, message, Select, Table, Tabs} from 'antd';
 import { Column } from 'rc-table';
 import React, { useEffect, useState } from 'react';
 import './index.less';
+import {VAMAPI_CLIENT_SDK} from "@/constants";
 
 const { Option } = Select;
 
@@ -35,10 +44,35 @@ type toolsParams = {
   paramsValue: string;
 };
 
+/**
+ *  Delete node
+ * @zh-CN 删除节点
+ *
+ * @param record
+ */
+const handleActivate = async (record: API.UserInterfaceInfoAddRequest) => {
+  const hide = message.loading('正在开通调用权限');
+  if (!record) return true;
+  try {
+    await addUserInterfaceInfoUsingPost({
+      userId:record.userId,
+      interfaceInfoId:record.interfaceInfoId
+    });
+    hide();
+    message.success('开通调用权限成功');
+    return true;
+  } catch (error: any) {
+    hide();
+    message.error('开通调用权限失败，' + error.message);
+    return false;
+  }
+};
+
 const ListOpenApiInfo: React.FC = () => {
   // 定义状态和钩子函数
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<API.InterfaceInfo>();
+  const [ActivateData, setActivate] = useState<API.UserInterfaceInfoAddRequest>();
   const params = useParams();
   const [activeTabKey, setActiveTabKey] = useState<
     'tools' | 'api' | 'errorCode' | 'sampleCode' | string
@@ -484,12 +518,25 @@ const ListOpenApiInfo: React.FC = () => {
       message.error('参数不存在');
       return;
     }
+
     setLoading(true);
     try {
       const res = await getInterfaceInfoByIdUsingGet({
         id: params.id,
       });
+      const UserRes = await getLoginUserUsingGet({
+        ...values(),
+      });
       setData(res.data);
+      // setActivate(res.data.id,UserRes.data.id)
+
+      // 构造新的部分对象，只包含所需属性
+      const partialRequest: API.UserInterfaceInfoAddRequest = {
+        interfaceInfoId: res.data.id,
+        userId: UserRes.data.id
+      };
+      // 将部分对象传递给 setActivate 函数
+      setActivate(partialRequest);
 
       // 获取请求参数和响应参数
       let requestParams = res.data.requestParams;
@@ -511,6 +558,8 @@ const ListOpenApiInfo: React.FC = () => {
     } catch (error: any) {
       message.error('请求失败，' + error.message);
     }
+
+
     setLoading(false);
   };
 
@@ -562,12 +611,20 @@ const ListOpenApiInfo: React.FC = () => {
           <>接口不存在</>
         )}
       </Card>
+
       <Card>
         <p className="highlightLine">接口详细描述请前往开发者在线文档查看：</p>
         <a href={`http://doc.vamapi.top/pages/${data?.id}/#${data?.name}`} target={"_blank"} rel="noreferrer">
           {/*<a href={`132/pages/${data?.id}/#${data?.name}`} target={'_blank'} rel="noreferrer">*/}
           📘 接口在线文档：{data?.name}
         </a>
+      </Card>
+      <Card>
+        <Button type="primary" onClick={() => {
+          handleActivate(ActivateData);
+        }}>
+          开通接口
+        </Button>
       </Card>
       <br />
       <Card
