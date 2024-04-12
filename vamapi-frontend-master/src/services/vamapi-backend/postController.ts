@@ -47,7 +47,7 @@ export async function editPostUsingPost(
 /** getPostVOById GET /api/post/get/vo */
 export async function getPostVoByIdUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
-  params: API.getPostVOByIdUsingGetParams,
+  params: API.getPostVOByIdUsingGETParams,
   options?: { [key: string]: any },
 ) {
   return request<API.BaseResponsePostVO_>('/api/post/get/vo', {

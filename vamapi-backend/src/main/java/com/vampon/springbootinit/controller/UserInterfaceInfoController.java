@@ -1,5 +1,6 @@
 package com.vampon.springbootinit.controller;
 
+import co.elastic.clients.elasticsearch.xpack.usage.Base;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.vampon.springbootinit.annotation.AuthCheck;
@@ -48,7 +49,7 @@ public class UserInterfaceInfoController {
     // region 增删改查
 
     /**
-     * 创建
+     * 创建(开通用户接口调用权限)
      *
      * @param userInterfaceInfoAddRequest
      * @param request
@@ -62,6 +63,8 @@ public class UserInterfaceInfoController {
         }
         UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
         BeanUtils.copyProperties(userInterfaceInfoAddRequest, userInterfaceInfo);
+        // 首次开通，免费赠送1000次调用权限
+        userInterfaceInfo.setLeftNum(1000);
         // 校验
         userInterfaceInfoService.validUserInterfaceInfo(userInterfaceInfo, true);
         User loginUser = userService.getLoginUser(request);
@@ -198,6 +201,7 @@ public class UserInterfaceInfoController {
         Page<UserInterfaceInfo> userInterfaceInfoPage = userInterfaceInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(userInterfaceInfoPage);
     }
+
 
 
 

@@ -1,10 +1,10 @@
 export default [
-  {
-    path: '/welcome',
-    name: '欢迎',
-    icon: 'smile',
-    component: './Welcome',
-  },
+  // {
+  //   path: '/welcome',
+  //   name: '欢迎',
+  //   icon: 'smile',
+  //   component: './Welcome',
+  // },
   { path: '/', name: '主页', icon: 'smile', component: './Index' },
   { path: '/interface_info/:id', name: '查看接口', icon: 'smile', component: './InterfaceInfo', hideInMenu: true },
   {

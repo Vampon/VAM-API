@@ -1,5 +1,6 @@
 package com.vampon.springbootinit.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.vampon.springbootinit.common.ErrorCode;
@@ -45,10 +46,25 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         updateWrapper.eq("interfaceInfoId", interfaceInfoId);
         updateWrapper.eq("userId", userId);
         updateWrapper.gt("leftNum", 0);
-        // todo:引入事务，使得更安全
+        // todo:引入事务，使得更安全（目前肯定会存在并发安全问题）
         updateWrapper.setSql("leftNum = leftNum - 1, totalNum = totalNum + 1");
         boolean update = this.update(updateWrapper);
         return update;
+    }
+
+    @Override
+    public int getUserInterfaceInfoLeftNum(long interfaceInfoId, long userId) {
+        if(interfaceInfoId <= 0 || userId <= 0){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("interfaceInfoId", interfaceInfoId);
+        queryWrapper.eq("userId", userId);
+        UserInterfaceInfo query = this.getOne(queryWrapper);
+        if(query == null){
+            return 0;
+        }
+        return query.getLeftNum();
     }
 }
 
