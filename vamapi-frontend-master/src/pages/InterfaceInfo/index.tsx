@@ -30,7 +30,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProColumns } from '@ant-design/pro-components';
-import {Badge, Button, Card, Descriptions, Form, message, Select, Table, Tabs} from 'antd';
+import {Badge, Button, Card, Descriptions, Form, message, Select, Table, Tabs, Tag} from 'antd';
 import { Column } from 'rc-table';
 import React, { useEffect, useState } from 'react';
 import './index.less';
@@ -590,7 +590,7 @@ const ListOpenApiInfo: React.FC = () => {
           >
             <Descriptions.Item label="请求地址">{data.url}</Descriptions.Item>
             {/*<Descriptions.Item label="返回格式">{data.returnFormat}</Descriptions.Item>*/}
-            <Descriptions.Item label="请求方式">{data.method}</Descriptions.Item>
+            <Descriptions.Item label="请求方式"><Tag color="blue">{data.method}</Tag></Descriptions.Item>
             {/*<Descriptions.Item label="请求示例">{data.requestExample}</Descriptions.Item>*/}
             <Descriptions.Item label="接口状态">
               {data && data.status === 0 ? (
