@@ -98,8 +98,8 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         }
         // 基于Redisson对单个用户每秒调用次数限流
         // redisLimiterManager.doRateLimit("invoke_" + invokeUser.getId());
-        //todo:这里不应该使用魔法值vampon
-        if(!"vampon".equals(accessKey) )
+        // 这里不应该使用魔法值vampon
+        if(!invokeUser.getAccessKey().equals(accessKey) )
         {
             return handleNoAuth(response);
         }

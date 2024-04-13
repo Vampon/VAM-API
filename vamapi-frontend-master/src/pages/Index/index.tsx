@@ -1,8 +1,8 @@
 import { PageContainer } from '@ant-design/pro-components';
 import React, { useEffect, useState } from 'react';
-import { List, message } from 'antd';
+import {List, message, Tag, Space, Badge} from 'antd';
 import { listInterfaceInfoByPageUsingGet } from '@/services/vamapi-backend/interfaceInfoController';
-
+import {interfaceMethodList, interfaceStatusList} from '@/enum/interfaceInfoEnum';
 /**
  * 主页
  * @constructor
@@ -45,6 +45,16 @@ const Index: React.FC = () => {
               <List.Item.Meta
                 title={<a href={apiLink}>{item.name}</a>}
                 description={item.description}
+              />
+              {item.method === interfaceMethodList.GET.text && (
+                <Tag color="blue">GET</Tag>
+              )}
+              {item.method === interfaceMethodList.POST.text && (
+                 <Tag color="blue">POST</Tag>
+              )}
+              <Badge
+                status={interfaceStatusList[item.status.toString()].status}
+                text={interfaceStatusList[item.status.toString()].text}
               />
             </List.Item>
           );
