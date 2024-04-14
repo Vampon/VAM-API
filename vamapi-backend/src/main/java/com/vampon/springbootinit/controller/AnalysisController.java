@@ -43,7 +43,7 @@ public class AnalysisController {
     @GetMapping("/top/interface/invoke")
     @AuthCheck(mustRole = "admin")
     public BaseResponse<List<InterfaceInfoVO>> listTopInvokeInterfaceInfo() { //tips:再好好看看
-        List<UserInterfaceInfo> userInterfaceInfoList = userInterfaceInfoMapper.listTopInvokeInterfaceInfo(3);
+        List<UserInterfaceInfo> userInterfaceInfoList = userInterfaceInfoMapper.listTopInvokeInterfaceInfo(5);
         Map<Long, List<UserInterfaceInfo>> interfaceInfoIdObjMap = userInterfaceInfoList.stream()
                 .collect(Collectors.groupingBy(UserInterfaceInfo::getInterfaceInfoId));
         QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();

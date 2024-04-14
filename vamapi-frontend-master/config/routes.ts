@@ -1,12 +1,12 @@
 export default [
-  // {
-  //   path: '/welcome',
-  //   name: '欢迎',
-  //   icon: 'smile',
-  //   component: './Welcome',
-  // },
-  { path: '/', name: '主页', icon: 'smile', component: './Index' },
-  { path: '/interface_info/:id', name: '查看接口', icon: 'smile', component: './InterfaceInfo', hideInMenu: true },
+  {
+    path: '/welcome',
+    name: '欢迎',
+    icon: 'smile',
+    component: './Welcome',
+  },
+  { path: '/interface_info', name: '接口市集', icon: 'ApiOutlined', component: './Index' },
+  { path: '/interface_info/:id', name: '查看接口', icon: 'ApiOutlined', component: './InterfaceInfo', hideInMenu: true }, //icon: 'smile',
   {
     path: '/user',
     layout: false,
@@ -29,6 +29,6 @@ export default [
   },
   // { name: '个人中心', icon: 'UserOutlined', path: '/profile', component: './User/Profile' },
   { path: '/user/info', name: '个人中心', icon: 'user', component: './User/UserInfo' },
-  // { path: '/', redirect: '/welcome' },
+  { path: '/', redirect: '/welcome' },
   { path: '*', layout: false, component: './404' },
 ];
