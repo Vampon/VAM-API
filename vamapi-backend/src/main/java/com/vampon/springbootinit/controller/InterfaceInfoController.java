@@ -18,6 +18,7 @@ import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -41,7 +42,8 @@ public class InterfaceInfoController {
     @Resource
     private UserService userService;
 
-
+//    @Autowired
+//    private CacheClient cacheClient;
 
     // region 增删改查
 
@@ -68,6 +70,10 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         long newInterfaceInfoId = interfaceInfo.getId();
+        // todo: 存入缓存
+//        cacheClient.set(CACHE_INTERFACEINFO_KEY + newInterfaceInfoId, interfaceInfo, CACHE_INTERFACEINFO_TTL, TimeUnit.MINUTES);
+//        stringRedisTemplate.opsForZSet().add(CACHE_INTERFACEINFO_ALL_KEY, JSON.toJSONString(interfaceInfo), CACHE_INTERFACEINFO_ALL_TTL);
+//        stringRedisTemplate.expire(CACHE_INTERFACEINFO_ALL_KEY, CACHE_INTERFACEINFO_ALL_TTL, TimeUnit.MINUTES);
         return ResultUtils.success(newInterfaceInfoId);
     }
 
@@ -95,6 +101,7 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean b = interfaceInfoService.removeById(id);
+        interfaceInfoService.deleteRedisCache(id);
         return ResultUtils.success(b);
     }
 
@@ -127,6 +134,7 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = interfaceInfoService.updateById(interfaceInfo);
+        interfaceInfoService.deleteRedisCache(id);
         return ResultUtils.success(result);
     }
 
@@ -175,24 +183,7 @@ public class InterfaceInfoController {
         if (interfaceInfoQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        InterfaceInfo interfaceInfoQuery = new InterfaceInfo();
-        BeanUtils.copyProperties(interfaceInfoQueryRequest, interfaceInfoQuery);
-        long current = interfaceInfoQueryRequest.getCurrent();
-        long size = interfaceInfoQueryRequest.getPageSize();
-        String sortField = interfaceInfoQueryRequest.getSortField();
-        String sortOrder = interfaceInfoQueryRequest.getSortOrder();
-        String description = interfaceInfoQuery.getDescription();
-        // description 需支持模糊搜索
-        interfaceInfoQuery.setDescription(null);
-        // 限制爬虫
-        if (size > 50) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>(interfaceInfoQuery);
-        queryWrapper.like(StringUtils.isNotBlank(description), "description", description);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField),
-                sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
-        Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
+        Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.listInterfaceInfoByPage(interfaceInfoQueryRequest);
         return ResultUtils.success(interfaceInfoPage);
     }
 
@@ -225,6 +216,7 @@ public class InterfaceInfoController {
         interfaceInfo.setStatus(InterfaceInfoStatusEnum.ONLINE.getValue());
         //tips: 查查那个只有变化的字段才更新的实现是什么
         boolean result = interfaceInfoService.updateById(interfaceInfo);
+        interfaceInfoService.deleteRedisCache(id);
         return ResultUtils.success(result);
     }
 
@@ -255,6 +247,7 @@ public class InterfaceInfoController {
         interfaceInfo.setStatus(InterfaceInfoStatusEnum.OFFLINE.getValue());
         //tips: 查查那个只有变化的字段才更新的实现是什么
         boolean result = interfaceInfoService.updateById(interfaceInfo);
+        interfaceInfoService.deleteRedisCache(id);
         return ResultUtils.success(result);
     }
 
