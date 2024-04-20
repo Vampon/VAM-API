@@ -301,6 +301,8 @@ declare namespace API {
     userName?: string;
     userProfile?: string;
     userRole?: string;
+    accessKey?: string;
+    secretKey?: string;
   };
 
   type OrderItem = {
