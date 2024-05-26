@@ -6,8 +6,10 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.vampon.vamapicommon.common.ResultUtils;
 import com.vampon.vamapicommon.common.BaseResponse;
+import com.vampon.vamapiinterface.model.WeiboHot;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 有意思的接口
@@ -74,37 +77,38 @@ public class FunApiController {
      * 获取微博热搜
      * @return 返回微博热搜
      */
-//    @GetMapping("/weiboHotSearch")
-//    public BaseResponse<String> getWeiboHotSearch(HttpServletRequest request){
-//        // 1. 访问微博热搜接口
-//        String url = "https://weibo.com/ajax/side/hotSearch";
-//        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
-//        HttpResponse httpResponse = HttpRequest.get(url + "?" + body).execute();
-//        String responseJson = httpResponse.body();
-//        // 解析 JSON
-//        JSONObject jsonObject = JSONObject.parseObject(responseJson);
-//
-//        // 获取微博的realtime数组
-//        JSONArray realtimeArray = jsonObject.getJSONObject("data").getJSONArray("realtime");
-//        // 遍历realtime数组并只保留note、label_name和num字段
-//
-//        List<WeiboHot> weiboHotList = new ArrayList<>();
-//        for (int i = 0; i < realtimeArray.size(); i++) {
-//            JSONObject realtimeObject = realtimeArray.getJSONObject(i);
-//            JSONObject filteredObject = new JSONObject();
-//            String note = realtimeObject.getString("note");
-//            filteredObject.put("index", i+1);
-//            filteredObject.put("title", note);
-//            filteredObject.put("hotType", realtimeObject.getString("label_name"));
-//            filteredObject.put("hotNum", realtimeObject.getInteger("num"));
-//            filteredObject.put("url", "https://s.weibo.com/weibo?q=%23"+ URLUtil.encode(note) +"%23");
-//            WeiboHot weiboHot = filteredObject.toJavaObject(WeiboHot.class);
-//            weiboHotList.add(weiboHot);
-//        }
+    @GetMapping("/weiboHotSearch")
+    public BaseResponse<String> getWeiboHotSearch(HttpServletRequest request){
+        // 1. 访问微博热搜接口
+        String url = "https://weibo.com/ajax/side/hotSearch";
+        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
+        HttpResponse httpResponse = HttpRequest.get(url + "?" + body).execute();
+        String responseJson = httpResponse.body();
+        // 解析 JSON
+        JSONObject jsonObject = JSONUtil.parseObj(responseJson);
+
+        // 获取微博的realtime数组
+        JSONArray realtimeArray = jsonObject.getJSONObject("data").getJSONArray("realtime");
+        // 遍历realtime数组并只保留note、label_name和num字段
+
+        List<WeiboHot> weiboHotList = new ArrayList<>();
+        for (int i = 0; i < realtimeArray.size(); i++) {
+            JSONObject realtimeObject = realtimeArray.getJSONObject(i);
+            JSONObject filteredObject = new JSONObject();
+            String note = realtimeObject.getStr("note");
+            filteredObject.put("index", i+1);
+            filteredObject.put("title", note);
+            filteredObject.put("hotType", realtimeObject.getStr("label_name"));
+            filteredObject.put("hotNum", realtimeObject.getStr("num"));
+            filteredObject.put("url", "https://s.weibo.com/weibo?q=%23"+ URLUtil.encode(note) +"%23");
+            WeiboHot weiboHot = filteredObject.toBean(WeiboHot.class);
+            weiboHotList.add(weiboHot);
+        }
 //        WeiboHotSearchResponse weiboHotSearchResponse = new WeiboHotSearchResponse();
 //        weiboHotSearchResponse.setWeibohotSearch(weiboHotList);
-//
-//        // 3.返回
-//        return weiboHotSearchResponse;
-//    }
+        String weiboHotResult = JSONUtil.toJsonStr(weiboHotList);
+
+        // 3.返回
+        return ResultUtils.success(weiboHotResult);
+    }
 }

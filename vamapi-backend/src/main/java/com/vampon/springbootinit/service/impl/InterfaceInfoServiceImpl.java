@@ -21,7 +21,9 @@ import com.vampon.springbootinit.service.UserService;
 import com.vampon.springbootinit.utils.VamApiClient;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.util.StringUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.vampon.springbootinit.constant.RedisConstant.*;
@@ -42,6 +45,7 @@ import static com.vampon.springbootinit.constant.RedisConstant.*;
 * @createDate 2024-02-28 23:31:22
 */
 @Service
+@Slf4j
 public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, InterfaceInfo>
     implements InterfaceInfoService {
     @Resource
@@ -129,10 +133,12 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                     .collect(Collectors.toList());
             page.setRecords(pagedInterfaces);
             page.setTotal(allInterfacesInRedis.size());
-            System.out.println("缓存命中");
+            // System.out.println("缓存命中");
+            log.info("分页缓存命中");
             return page;
         }
-        System.out.println("缓存未命中");
+        // System.out.println("缓存未命中");
+        log.info("分页缓存未命中");
         // 未命中,查询数据库
         List<InterfaceInfo> allInterfaceInfoList = list();
         page.setRecords(allInterfaceInfoList);
@@ -143,8 +149,12 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
             String json = convertInterfaceInfoToJSON(interfaceInfo);
 
             // 添加到 Redis 的 ZSet 中，使用默认的 score（即按照插入顺序）
+            // todo:score换成调用次数
             stringRedisTemplate.opsForZSet().add(CACHE_INTERFACEINFO_ALL_KEY, json,interfaceInfo.getId());
+
         }
+        // 设置过期时间，用来作为如果出现缓存不一致现象的兜底方案
+        stringRedisTemplate.expire(CACHE_INTERFACEINFO_ALL_KEY,CACHE_INTERFACEINFO_ALL_TTL,TimeUnit.MINUTES);
         return page;
 
         //todo: queryWrapper需要再看看
@@ -227,6 +237,36 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
     public void deleteRedisCache(Long id){
         stringRedisTemplate.delete(CACHE_INTERFACEINFO_ALL_KEY);
         stringRedisTemplate.delete(CACHE_INTERFACEINFO_KEY + id);
+    }
+
+    @Override
+    public InterfaceInfo getInterfaceInfoById(Long id) {
+        // 查询缓存
+        String interfaceInfoJson = stringRedisTemplate.opsForValue().get(CACHE_INTERFACEINFO_KEY + id);
+        if(StrUtil.isNotBlank(interfaceInfoJson)){
+            log.info("id:" + id + "接口信息缓存命中");
+            return convertJSONToInterfaceInfo(interfaceInfoJson);
+        }
+        // 判断是否是空值
+        // 因为StrUtil.isNotBlank是false对应的是字符串里是""或者为null，因此如果过了上面的if，只需在这里再判断一下不是null，就可以确定是空值""了
+        if(interfaceInfoJson!=null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR , "请求接口数据不存在");
+        }
+
+        // 缓存没有命中
+        log.info("id:" + id + "接口信息缓存未命中");
+        InterfaceInfo interfaceInfo = getById(id);
+        //
+        if(interfaceInfo==null){
+            // 将空值也存入redis缓存，为了防止缓存穿透问题
+            stringRedisTemplate.opsForValue().set(CACHE_INTERFACEINFO_KEY + id,"",CACHE_NULL_TTL);
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR , "请求接口数据不存在");
+        }
+        // 将 InterfaceInfo 转为 JSON 字符串
+        String json = convertInterfaceInfoToJSON(interfaceInfo);
+        // CACHE_INTERFACEINFO_TTL是20到40的随机值，应对可能发生的缓存雪崩问题
+        stringRedisTemplate.opsForValue().set(CACHE_INTERFACEINFO_KEY + id,json,CACHE_INTERFACEINFO_TTL);
+        return interfaceInfo;
     }
 
 //    @Override

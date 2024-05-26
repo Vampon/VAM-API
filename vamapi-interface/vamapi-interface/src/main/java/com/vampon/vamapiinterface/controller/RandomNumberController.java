@@ -21,7 +21,7 @@ public class RandomNumberController {
 
 
     @GetMapping("/random_number")
-    public BaseResponse<String> getRandomNumberByPost(@RequestParam Integer range)
+    public BaseResponse<String> getRandomNumberByPost(Integer range)
     {
         Random random = new Random();
         int rtnNum = random.nextInt(range) + 1;

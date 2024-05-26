@@ -42,9 +42,6 @@ public class InterfaceInfoController {
     @Resource
     private UserService userService;
 
-//    @Autowired
-//    private CacheClient cacheClient;
-
     // region 增删改查
 
     /**
@@ -100,6 +97,7 @@ public class InterfaceInfoController {
         if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // todo:先更新数据库，再更新缓存好像不对，并发场景下无法保证一致性
         boolean b = interfaceInfoService.removeById(id);
         interfaceInfoService.deleteRedisCache(id);
         return ResultUtils.success(b);
@@ -149,7 +147,7 @@ public class InterfaceInfoController {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        InterfaceInfo interfaceInfo = interfaceInfoService.getInterfaceInfoById(id);
         return ResultUtils.success(interfaceInfo);
     }
 

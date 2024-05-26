@@ -30,4 +30,6 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
     Page<InterfaceInfo> listInterfaceInfoByPage(InterfaceInfoQueryRequest interfaceInfoQueryRequest);
 
     void deleteRedisCache(Long id);
+
+    InterfaceInfo getInterfaceInfoById(Long id);
 }
