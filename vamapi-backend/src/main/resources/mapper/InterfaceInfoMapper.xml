@@ -26,4 +26,6 @@
         status,method,userId,
         createTime,updateTime,isDeleted
     </sql>
+
+<!--    <update id=""></update>-->
 </mapper>

@@ -155,6 +155,7 @@ const UserInfo: React.FC = () => {
             const res = await getLoginUserUsingGet({
               ...values(),
             });
+
             setCurrentRow(res.data);
             if (res?.data) {
               return {
