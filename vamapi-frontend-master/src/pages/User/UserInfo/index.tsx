@@ -8,6 +8,7 @@ import {values} from 'lodash';
 import {Button, message, DownloadOutlined} from 'antd';
 import {useState} from 'react';
 import {VAMAPI_CLIENT_SDK} from "@/constants";
+import { Image } from 'antd';
 
 /**
  * 个人中心
@@ -100,11 +101,11 @@ const UserInfo: React.FC = () => {
               dataIndex: 'userAvatar',
               valueType: 'image',
               hideInSearch: true,
-              // render: (_, record) => (
-              //   <div>
-              //     <Image src={record.userAvatar} width={50}/>
-              //   </div>
-              // )
+              render: (_, record) => (
+                <div>
+                  <Image src={record.userAvatar} width={50}/>
+                </div>
+              ),
               editable: false,
             },
             {

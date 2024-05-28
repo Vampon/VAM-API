@@ -54,5 +54,11 @@ public class LoginUserVO implements Serializable {
      */
     private String accessKey;
 
+    /**
+     * 用户secretKey
+     * todo:这个不应该传输的
+     */
+    private String secretKey;
+
     private static final long serialVersionUID = 1L;
 }

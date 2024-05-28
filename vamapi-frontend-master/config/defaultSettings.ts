@@ -10,14 +10,15 @@ const Settings: LayoutSettings & {
   navTheme: 'light',
   // 拂晓蓝
   colorPrimary: '#1890ff',
-  layout: 'top',
+  layout: 'mix',
   contentWidth: 'Fluid',
   fixedHeader: false,
   fixSiderbar: true,
+  splitMenus: false,
   colorWeak: false,
   title: 'VAM接口',
   pwa: false,
-  logo: 'https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg',
+  logo: '../public/logo.svg',
   iconfontUrl: '',
 };
 
