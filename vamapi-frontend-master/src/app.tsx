@@ -1,5 +1,6 @@
 import Footer from '@/components/Footer';
 import RightContent from '@/components/RightContent';
+import {AvatarDropdown, AvatarName} from './components/RightContent/AvatarDropdown';
 import { LinkOutlined } from '@ant-design/icons';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
@@ -10,7 +11,6 @@ import {getLoginUserUsingGet} from "@/services/vamapi-backend/userController";
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 const registerPath = '/user/register';
-
 /**
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
  * */
@@ -33,12 +33,19 @@ export async function getInitialState(): Promise<InitialState> {
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
 export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) => {
   return {
-    layout: "top",
+    layout: "mix",
     rightContentRender: () => <RightContent />,
     waterMarkProps: {
       content: initialState?.loginUser?.userName,
     },
     footerRender: () => <Footer />,
+    avatarProps: {
+      src: initialState?.loginUser?.userAvatar,
+      title: <AvatarName />,
+      render: (_, avatarChildren) => {
+        return <AvatarDropdown>{avatarChildren}</AvatarDropdown>;
+      },
+    },
     onPageChange: () => {
       const { location } = history;
       const whiteList = [registerPath,loginPath]
@@ -74,7 +81,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       ? [
           <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
             <LinkOutlined />
-            <span>OpenAPI 文档</span>
+            <span>接口文档</span>
           </Link>,
         ]
       : [],
@@ -91,7 +98,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
             <SettingDrawer
               disableUrlParams
               enableDarkTheme
-              settings={initialState?.settings}
+              // settings={initialState?.settings}
               onSettingChange={(settings) => {
                 setInitialState((preInitialState) => ({
                   ...preInitialState,
@@ -103,7 +110,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         </>
       );
     },
-    ...initialState?.settings,
+    //...initialState?.settings,
   };
 };
 

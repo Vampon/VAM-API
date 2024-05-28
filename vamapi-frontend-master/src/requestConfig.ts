@@ -1,6 +1,6 @@
 ﻿import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
-
+import {message} from 'antd';
 // 与后端约定的响应数据格式
 interface ResponseStructure {
   success: boolean;
@@ -31,10 +31,14 @@ export const requestConfig: RequestConfig = {
       // 拦截响应数据，进行个性化处理
       const { data } = response as unknown as ResponseStructure;
       console.log('data', data);
-      if (data.code !== 0) {
-        throw new Error(data.message);
+      if (data.code == 0) {
+        return response;
+      }else{
+        // throw new Error(data.message);
+        message.error(data.message);
+        return response;
       }
-      return response;
+
     },
   ],
 };
