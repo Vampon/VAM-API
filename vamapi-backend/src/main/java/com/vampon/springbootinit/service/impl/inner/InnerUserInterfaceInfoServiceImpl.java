@@ -24,4 +24,9 @@ public class InnerUserInterfaceInfoServiceImpl implements InnerUserInterfaceInfo
     public int getUserInterfaceInfoLeftNum(long interfaceInfoId, long userId) {
         return userInterfaceInfoService.getUserInterfaceInfoLeftNum(interfaceInfoId,userId);
     }
+
+    @Override
+    public boolean invokeProcess(long interfaceInfoId, long userId) {
+        return userInterfaceInfoService.invokeProcess(interfaceInfoId,userId);
+    }
 }

@@ -19,7 +19,8 @@ public class StableDiffusionController {
     @PostMapping("/word2img")
     public static BaseResponse<String> word2img(@org.springframework.web.bind.annotation.RequestBody StableDiffusionPrompt stableDiffusionPrompt) throws IOException{
         MediaType mediaType = MediaType.parse("application/json");
-        String requestBodyString = "{\"prompt\":\"" + stableDiffusionPrompt.getPositive_prompt() + ",\"size\":\"1024x1024\",\"n\":1,\"steps\":10,\"sampler_index\":\"Euler a\"}";
+        String requestBodyString = "{\"prompt\":\"" + stableDiffusionPrompt.getPositive_prompt() + "\",\"size\":\"768x768\",\"n\":1,\"steps\":10,\"sampler_index\":\"Euler a\"}";
+        System.out.println(requestBodyString);
         RequestBody body = RequestBody.create(mediaType, requestBodyString);
         Request request = new Request.Builder()
                 .url("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/text2image/sd_xl?access_token=" + getAccessToken())

@@ -15,7 +15,8 @@ interface ResponseStructure {
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const requestConfig: RequestConfig = {
-  baseURL: 'http://localhost:8101',
+  // todo:上线的话这里需要修改
+  baseURL: 'http://localhost:8101/',
   withCredentials: true,
   // 请求拦截器
   requestInterceptors: [

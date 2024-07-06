@@ -1,15 +1,18 @@
 package com.vampon.springbootinit.service.impl;
 
+import static com.vampon.springbootinit.constant.EmailConstant.CAPTCHA_CACHE_KEY;
 import static com.vampon.springbootinit.constant.UserConstant.USER_LOGIN_STATE;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.vampon.springbootinit.common.ErrorCode;
 import com.vampon.springbootinit.constant.CommonConstant;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.mapper.UserMapper;
+import com.vampon.springbootinit.model.dto.user.UserBindEmailRequest;
 import com.vampon.springbootinit.model.dto.user.UserQueryRequest;
 import com.vampon.springbootinit.model.enums.UserRoleEnum;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
@@ -17,14 +20,18 @@ import com.vampon.springbootinit.model.vo.UserVO;
 import com.vampon.springbootinit.service.UserService;
 import com.vampon.springbootinit.utils.SqlUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -42,6 +49,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 盐值，混淆密码
      */
     public static final String SALT = "vam";  //
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -276,4 +286,81 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 sortField);
         return queryWrapper;
     }
+
+    @Override
+    public boolean addWalletBalance(Long userId, Integer addPoints) {
+        LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        userLambdaUpdateWrapper.eq(User::getId, userId);
+        userLambdaUpdateWrapper.setSql("balance = balance + " + addPoints);
+        return this.update(userLambdaUpdateWrapper);
+    }
+
+    @Override
+    public boolean reduceWalletBalance(Long userId, Integer reduceScore) {
+        LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        userLambdaUpdateWrapper.eq(User::getId, userId);
+        userLambdaUpdateWrapper.setSql("balance = balance - " + reduceScore);
+        return this.update(userLambdaUpdateWrapper);
+    }
+
+    @Override
+    public UserVO updateVoucher(User loginUser) {
+        String accessKey = DigestUtils.md5DigestAsHex((Arrays.toString(RandomUtil.randomBytes(10)) + SALT ).getBytes());
+        String secretKey = DigestUtils.md5DigestAsHex((SALT + Arrays.toString(RandomUtil.randomBytes(10))).getBytes());
+        loginUser.setAccessKey(accessKey);
+        loginUser.setSecretKey(secretKey);
+        boolean result = this.updateById(loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(loginUser, userVO);
+        return userVO;
+    }
+
+    @Override
+    public UserVO userBindEmail(UserBindEmailRequest userEmailLoginRequest, HttpServletRequest request) {
+        String emailAccount = userEmailLoginRequest.getEmailAccount();
+        String captcha = userEmailLoginRequest.getCaptcha();
+        if (StringUtils.isAnyBlank(emailAccount, captcha)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (!Pattern.matches(emailPattern, emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
+        }
+        String cacheCaptcha = redisTemplate.opsForValue().get(CAPTCHA_CACHE_KEY + emailAccount);
+        if (StringUtils.isBlank(cacheCaptcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码已过期,请重新获取");
+        }
+        captcha = captcha.trim();
+        if (!cacheCaptcha.equals(captcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
+        }
+        // 查询用户是否绑定该邮箱
+        User loginUser = this.getLoginUser(request);
+        if (loginUser.getUserEmail() != null && emailAccount.equals(loginUser.getUserEmail())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该账号已绑定此邮箱,请更换新的邮箱！");
+        }
+        // 查询邮箱是否已经绑定
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("email", emailAccount);
+        User user = this.getOne(queryWrapper);
+        if (user != null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "此邮箱已被绑定,请更换新的邮箱！");
+        }
+        user = new User();
+        user.setId(loginUser.getId());
+        user.setUserEmail(emailAccount);
+        boolean bindEmailResult = this.updateById(user);
+        if (!bindEmailResult) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "邮箱绑定失败,请稍后再试！");
+        }
+        loginUser.setUserEmail(emailAccount);
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(loginUser, userVO);
+        return userVO;
+    }
+
+
 }

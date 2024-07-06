@@ -2,6 +2,7 @@ package com.vampon.springbootinit.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.vampon.springbootinit.model.dto.user.UserBindEmailRequest;
 import com.vampon.springbootinit.model.dto.user.UserQueryRequest;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
 import com.vampon.springbootinit.model.vo.UserVO;
@@ -117,5 +118,39 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 添加钱包余额
+     *
+     * @param userId    用户id
+     * @param addPoints 添加点
+     * @return
+     */
+    boolean addWalletBalance(Long userId, Integer addPoints);
+
+    /**
+     * 减少钱包余额
+     *
+     * @param userId      用户id
+     * @param reduceScore 减少分数
+     * @return
+     */
+    boolean reduceWalletBalance(Long userId, Integer reduceScore);
+
+    /**
+     * 用户绑定电子邮件
+     *
+     * @param userEmailLoginRequest 用户电子邮件登录请求
+     * @param request               要求
+     * @return
+     */
+    UserVO userBindEmail(UserBindEmailRequest userEmailLoginRequest, HttpServletRequest request);
+
+    /**
+     * 更新用户ak/sk
+     * @param loginUser
+     * @return
+     */
+    public UserVO updateVoucher(User loginUser);
 
 }

@@ -1,25 +1,26 @@
 package com.vampon.springbootinit.controller;
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.vampon.springbootinit.annotation.AuthCheck;
 import com.vampon.springbootinit.common.*;
+import com.vampon.springbootinit.config.EmailConfig;
 import com.vampon.springbootinit.constant.UserConstant;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.exception.ThrowUtils;
-import com.vampon.springbootinit.model.dto.user.UserAddRequest;
-import com.vampon.springbootinit.model.dto.user.UserLoginRequest;
-import com.vampon.springbootinit.model.dto.user.UserQueryRequest;
-import com.vampon.springbootinit.model.dto.user.UserRegisterRequest;
-import com.vampon.springbootinit.model.dto.user.UserUpdateMyRequest;
-import com.vampon.springbootinit.model.dto.user.UserUpdateRequest;
+import com.vampon.springbootinit.model.dto.user.*;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
 import com.vampon.springbootinit.model.vo.UserVO;
 import com.vampon.springbootinit.service.UserService;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -28,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,7 +40,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.vampon.springbootinit.constant.EmailConstant.*;
 import static com.vampon.springbootinit.service.impl.UserServiceImpl.SALT;
+import static com.vampon.springbootinit.utils.EmailUtil.buildEmailContent;
 
 /**
  * 用户接口
@@ -51,6 +57,14 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private EmailConfig emailConfig;
+    @Resource
+    private JavaMailSender mailSender;
 
 
     // region 登录相关
@@ -378,5 +392,59 @@ public class UserController {
         }
         user.setUserRole("suspend");
         return ResultUtils.success(userService.updateById(user));
+    }
+
+
+    /**
+     * 获取验证码
+     *
+     * @param emailAccount 电子邮件帐户
+     * @return
+     */
+    @GetMapping("/getCaptcha")
+    public BaseResponse<Boolean> getCaptcha(String emailAccount) {
+        if (StringUtils.isBlank(emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (!Pattern.matches(emailPattern, emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
+        }
+        String captcha = RandomUtil.randomNumbers(6);
+        try {
+            sendEmail(emailAccount, captcha);
+            redisTemplate.opsForValue().set(CAPTCHA_CACHE_KEY + emailAccount, captcha, 5, TimeUnit.MINUTES);
+            return ResultUtils.success(true);
+        } catch (Exception e) {
+            log.error("【发送验证码失败】" + e.getMessage());
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码获取失败");
+        }
+    }
+
+    private void sendEmail(String emailAccount, String captcha) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        // 邮箱发送内容组成
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setSubject(EMAIL_SUBJECT);
+        helper.setText(buildEmailContent(EMAIL_HTML_CONTENT_PATH, captcha), true);
+        helper.setTo(emailAccount);
+        helper.setFrom(EMAIL_TITLE + '<' + emailConfig.getEmailFrom() + '>');
+        mailSender.send(message);
+    }
+
+    /**
+     * 用户绑定电子邮件
+     *
+     * @param request              请求
+     * @param userBindEmailRequest 用户绑定电子邮件请求
+     * @return
+     */
+    @PostMapping("/bind/login")
+    public BaseResponse<UserVO> userBindEmail(@RequestBody UserBindEmailRequest userBindEmailRequest, HttpServletRequest request) {
+        if (userBindEmailRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserVO user = userService.userBindEmail(userBindEmailRequest, request);
+        return ResultUtils.success(user);
     }
 }

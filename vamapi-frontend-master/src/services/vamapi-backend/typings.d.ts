@@ -29,6 +29,12 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseListProductInfo_ = {
+    code?: number;
+    data?: ProductInfo[];
+    message?: string;
+  };
+
   type BaseResponseListUserInterfaceInfo_ = {
     code?: number;
     data?: UserInterfaceInfo[];
@@ -59,6 +65,12 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseOrderVo_ = {
+    code?: number;
+    data?: OrderVo;
+    message?: string;
+  };
+
   type BaseResponsePageInterfaceInfo_ = {
     code?: number;
     data?: PageInterfaceInfo_;
@@ -74,6 +86,12 @@ declare namespace API {
   type BaseResponsePagePostVO_ = {
     code?: number;
     data?: PagePostVO_;
+    message?: string;
+  };
+
+  type BaseResponsePageProductInfo_ = {
+    code?: number;
+    data?: PageProductInfo_;
     message?: string;
   };
 
@@ -101,6 +119,18 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseProductInfo_ = {
+    code?: number;
+    data?: ProductInfo;
+    message?: string;
+  };
+
+  type BaseResponseProductOrderVo_ = {
+    code?: number;
+    data?: ProductOrderVo;
+    message?: string;
+  };
+
   type BaseResponseString_ = {
     code?: number;
     data?: string;
@@ -125,8 +155,23 @@ declare namespace API {
     message?: string;
   };
 
+  type closedProductOrderUsingPOSTParams = {
+    /** orderNo */
+    orderNo?: string;
+  };
+
+  type deleteProductOrderUsingPOSTParams = {
+    /** id */
+    id?: string;
+  };
+
   type DeleteRequest = {
     id?: number;
+  };
+
+  type getCaptchaUsingGETParams = {
+    /** emailAccount */
+    emailAccount?: string;
   };
 
   type getInterfaceInfoByIdUsingGETParams = {
@@ -137,6 +182,16 @@ declare namespace API {
   type getPostVOByIdUsingGETParams = {
     /** id */
     id?: number;
+  };
+
+  type getProductInfoByIdUsingGETParams = {
+    /** id */
+    id?: number;
+  };
+
+  type getProductOrderByIdUsingGETParams = {
+    /** id */
+    id?: string;
   };
 
   type getUserByIdUsingGETParams = {
@@ -159,17 +214,19 @@ declare namespace API {
   };
 
   type InterfaceInfo = {
+    avatarUrl?: string;
     createTime?: string;
     description?: string;
     id?: number;
     isDeleted?: number;
     method?: string;
     name?: string;
+    reduceScore?: number;
     requestHeader?: string;
     requestParams?: string;
     responseHeader?: string;
-    responseParams?: string;//add
     status?: number;
+    totalInvokes?: number;
     updateTime?: string;
     url?: string;
     userId?: number;
@@ -193,6 +250,11 @@ declare namespace API {
     userRequestParams?: string;
   };
 
+  type InterfaceInfoUpdateAvatarRequest = {
+    avatarUrl?: string;
+    id?: number;
+  };
+
   type InterfaceInfoUpdateRequest = {
     description?: string;
     id?: number;
@@ -206,16 +268,19 @@ declare namespace API {
   };
 
   type InterfaceInfoVO = {
+    avatarUrl?: string;
     createTime?: string;
     description?: string;
     id?: number;
     isDeleted?: number;
     method?: string;
     name?: string;
+    reduceScore?: number;
     requestHeader?: string;
     requestParams?: string;
     responseHeader?: string;
     status?: number;
+    totalInvokes?: number;
     totalNum?: number;
     updateTime?: string;
     url?: string;
@@ -238,6 +303,14 @@ declare namespace API {
     userId?: number;
   };
 
+  type listInterfaceInfoBySearchTextPageUsingGETParams = {
+    current?: number;
+    pageSize?: number;
+    searchText?: string;
+    sortField?: string;
+    sortOrder?: string;
+  };
+
   type listInterfaceInfoUsingGETParams = {
     current?: number;
     description?: string;
@@ -252,6 +325,52 @@ declare namespace API {
     status?: number;
     url?: string;
     userId?: number;
+  };
+
+  type listProductInfoByPageUsingGETParams = {
+    addPoints?: number;
+    current?: number;
+    description?: string;
+    name?: string;
+    pageSize?: number;
+    productType?: string;
+    sortField?: string;
+    sortOrder?: string;
+    total?: number;
+  };
+
+  type listProductInfoBySearchTextPageUsingGETParams = {
+    current?: number;
+    pageSize?: number;
+    searchText?: string;
+    sortField?: string;
+    sortOrder?: string;
+  };
+
+  type listProductInfoUsingGETParams = {
+    addPoints?: number;
+    current?: number;
+    description?: string;
+    name?: string;
+    pageSize?: number;
+    productType?: string;
+    sortField?: string;
+    sortOrder?: string;
+    total?: number;
+  };
+
+  type listProductOrderByPageUsingGETParams = {
+    addPoints?: number;
+    current?: number;
+    orderName?: string;
+    orderNo?: string;
+    pageSize?: number;
+    payType?: string;
+    productInfo?: string;
+    sortField?: string;
+    sortOrder?: string;
+    status?: string;
+    total?: number;
   };
 
   type listUserInterfaceInfoByPageUsingGETParams = {
@@ -294,20 +413,33 @@ declare namespace API {
   };
 
   type LoginUserVO = {
+    accessKey?: string;
     createTime?: string;
     id?: number;
+    secretKey?: string;
     updateTime?: string;
     userAvatar?: string;
     userName?: string;
     userProfile?: string;
     userRole?: string;
-    accessKey?: string;
-    secretKey?: string;
   };
 
   type OrderItem = {
     asc?: boolean;
     column?: string;
+  };
+
+  type OrderVo = {
+    countId?: string;
+    current?: number;
+    maxLimit?: number;
+    optimizeCountSql?: boolean;
+    optimizeJoinOfCountSql?: boolean;
+    orders?: OrderItem[];
+    records?: ProductOrderVo[];
+    searchCount?: boolean;
+    size?: number;
+    total?: number;
   };
 
   type PageInterfaceInfo_ = {
@@ -344,6 +476,19 @@ declare namespace API {
     orders?: OrderItem[];
     pages?: number;
     records?: PostVO[];
+    searchCount?: boolean;
+    size?: number;
+    total?: number;
+  };
+
+  type PageProductInfo_ = {
+    countId?: string;
+    current?: number;
+    maxLimit?: number;
+    optimizeCountSql?: boolean;
+    orders?: OrderItem[];
+    pages?: number;
+    records?: ProductInfo[];
     searchCount?: boolean;
     size?: number;
     total?: number;
@@ -386,6 +531,11 @@ declare namespace API {
     searchCount?: boolean;
     size?: number;
     total?: number;
+  };
+
+  type PayCreateRequest = {
+    payType?: string;
+    productId?: string;
   };
 
   type Post = {
@@ -469,14 +619,82 @@ declare namespace API {
     userId?: number;
   };
 
+  type ProductInfo = {
+    addPoints?: number;
+    createTime?: string;
+    description?: string;
+    expirationTime?: string;
+    id?: number;
+    isDelete?: number;
+    name?: string;
+    productType?: string;
+    status?: number;
+    total?: number;
+    updateTime?: string;
+    userId?: number;
+  };
+
+  type ProductInfoAddRequest = {
+    addPoints?: number;
+    description?: string;
+    expirationTime?: string;
+    name?: string;
+    productType?: string;
+    total?: number;
+  };
+
+  type ProductInfoUpdateRequest = {
+    addPoints?: number;
+    description?: string;
+    expirationTime?: string;
+    id?: number;
+    name?: string;
+    productType?: string;
+    total?: number;
+  };
+
+  type ProductOrderQueryRequest = {
+    addPoints?: number;
+    current?: number;
+    orderName?: string;
+    orderNo?: string;
+    pageSize?: number;
+    payType?: string;
+    productInfo?: string;
+    sortField?: string;
+    sortOrder?: string;
+    status?: string;
+    total?: number;
+  };
+
+  type ProductOrderVo = {
+    addPoints?: number;
+    codeUrl?: string;
+    createTime?: string;
+    description?: string;
+    expirationTime?: string;
+    formData?: string;
+    id?: number;
+    orderName?: string;
+    orderNo?: string;
+    payType?: string;
+    productId?: number;
+    productInfo?: ProductInfo;
+    productType?: string;
+    status?: string;
+    total?: string;
+  };
+
   type uploadFileUsingPOSTParams = {
     biz?: string;
   };
 
   type User = {
     accessKey?: string;
+    balance?: number;
     createTime?: string;
     id?: number;
+    invitationCode?: string;
     isDelete?: number;
     mpOpenId?: string;
     secretKey?: string;
@@ -484,6 +702,7 @@ declare namespace API {
     updateTime?: string;
     userAccount?: string;
     userAvatar?: string;
+    userEmail?: string;
     userName?: string;
     userPassword?: string;
     userProfile?: string;
@@ -495,6 +714,11 @@ declare namespace API {
     userAvatar?: string;
     userName?: string;
     userRole?: string;
+  };
+
+  type UserBindEmailRequest = {
+    captcha?: string;
+    emailAccount?: string;
   };
 
   type UserInterfaceInfo = {
@@ -563,11 +787,22 @@ declare namespace API {
   };
 
   type UserVO = {
+    accessKey?: string;
+    balance?: number;
     createTime?: string;
     id?: number;
+    invitationCode?: string;
     userAvatar?: string;
+    userEmail?: string;
     userName?: string;
     userProfile?: string;
     userRole?: string;
+  };
+
+  type RequestParamsField = {
+    desc?: string;
+    fieldName?: string;
+    required?: string;
+    type?: string;
   };
 }

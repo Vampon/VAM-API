@@ -3,6 +3,7 @@ package com.vampon.springbootinit.model.dto.interfaceinfo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 创建请求
@@ -32,7 +33,7 @@ public class InterfaceInfoAddRequest implements Serializable {
     /**
      * 请求参数
      */
-    private String requestParams;
+    private List<RequestParamsField> requestParams;
 
     /**
      * 请求头

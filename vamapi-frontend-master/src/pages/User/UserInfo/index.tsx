@@ -10,6 +10,11 @@ import {useState} from 'react';
 import {VAMAPI_CLIENT_SDK} from "@/constants";
 import { Image } from 'antd';
 
+
+export const valueLength = (val: any) => {
+  return val && val.trim().length > 0
+}
+
 /**
  * 个人中心
  * @constructor
@@ -114,6 +119,11 @@ const UserInfo: React.FC = () => {
               copyable: true,
             },
             {
+              title: '绑定邮箱',
+              dataIndex: 'userEmail',
+              copyable: true,
+            },
+            {
               title: '角色',
               dataIndex: 'userRole',
               valueType: 'select',
@@ -122,6 +132,11 @@ const UserInfo: React.FC = () => {
                 admin: { text: '管理员', status: 'Success' },
                 suspend: { text: '禁用', status: 'Error' },
               },
+              editable: false,
+            },
+            {
+              title: 'V金余额',
+              dataIndex: 'balance',
               editable: false,
             },
             {

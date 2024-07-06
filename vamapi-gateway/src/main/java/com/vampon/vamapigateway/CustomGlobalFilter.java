@@ -1,11 +1,14 @@
 package com.vampon.vamapigateway;
 
+import com.vampon.exception.BusinessException;
 import com.vampon.manager.RedisLimiterManager;
+import com.vampon.vamapicommon.common.ErrorCode;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
 import com.vampon.vamapicommon.service.InnerInterfaceInfoService;
 import com.vampon.vamapicommon.service.InnerUserInterfaceInfoService;
 import com.vampon.vamapicommon.service.InnerUserService;
+import com.vampon.vamapigateway.utils.RedissonLockUtil;
 import com.vampon.vamapigateway.utils.SignUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -25,9 +28,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import jakarta.annotation.Resource;
+import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static com.vampon.vamapicommon.model.enums.UserRoleEnum.BAN;
 
 @Slf4j
 @Component
@@ -43,8 +48,11 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @DubboReference
     private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
 
+//    @Resource
+//    private RedisLimiterManager redisLimiterManager;
+
     @Resource
-    private RedisLimiterManager redisLimiterManager;
+    private RedissonLockUtil redissonLockUtil;
 
     private static final List<String> IP_WHERE_LIST = Arrays.asList("127.0.0.1");//测试白名单
 
@@ -86,7 +94,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String timestamp = headers.getFirst("timestamp");
         String sign = headers.getFirst("sign");
         String body = headers.getFirst("body");
-        // 这里实际上应该需要先去数据库中查询一下是否已分配给该用户（done）
+        // 先去数据库中查询一下是否已分配给该用户
         User invokeUser = null;
         try {
             invokeUser = innerUserService.getInvokeUser(accessKey);
@@ -96,7 +104,9 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         if(invokeUser == null){
             return handleNoAuth(response);
         }
+
         // 基于Redisson对单个用户每秒调用次数限流
+        // todo: 限流操作
 //         redisLimiterManager.doRateLimit("invoke_" + invokeUser.getId());
         // 这里不应该使用魔法值vampon(done)
         if(!invokeUser.getAccessKey().equals(accessKey) )
@@ -116,12 +126,17 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             return handleNoAuth(response);
         }
 
+        if (invokeUser.getBalance() <= 0) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "余额不足，请先充值。");
+        }
+
         // 构造和客户端相同的hashMap
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("accessKey",accessKey);
         hashMap.put("nonce",nonce);
         hashMap.put("timestamp",timestamp);
-        hashMap.put("body",body);
+        // todo 此处因为涉及到中文参数的时候，就会出现不一致的现象，这里先把请求体去掉，后续再找解决办法
+        // hashMap.put("body",body);
         // 从数据库中查出secretKey（done）
         String secretKey = invokeUser.getSecretKey();
         String serverSign = SignUtils.getSign(hashMap, secretKey);
@@ -198,11 +213,20 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                             return super.writeWith(
                                     fluxBody.map(dataBuffer -> {
                                         // 调用成功，接口调用次数 + 1 invokeCount
-                                        try {
-                                            innerUserInterfaceInfoService.invokeCount(interfaceInfoId, userId);
-                                        } catch (Exception e) {
-                                            log.error("invokeCount error", e);
-                                        }
+                                        // todo:这块需要添加用户扣除积分，用户更新调用次数字段，可以都塞入invokeCount函数里
+//                                        try {
+//                                            innerUserInterfaceInfoService.invokeCount(interfaceInfoId, userId);
+//                                        } catch (Exception e) {
+//                                            log.error("invokeCount error", e);
+//                                        }
+                                        // 扣除积分
+                                        redissonLockUtil.redissonDistributedLocks(("gateway_" + userId).intern(), () -> {
+                                            boolean invoke = innerUserInterfaceInfoService.invokeProcess(interfaceInfoId, userId);
+                                            System.out.println("gateway_" + userId);
+                                            if (!invoke) {
+                                                throw new BusinessException(ErrorCode.OPERATION_ERROR, "接口调用失败");
+                                            }
+                                        }, "接口调用失败");
                                         byte[] content = new byte[dataBuffer.readableByteCount()];
                                         dataBuffer.read(content);
                                         DataBufferUtils.release(dataBuffer);//释放掉内存

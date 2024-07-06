@@ -71,6 +71,16 @@ public class User implements Serializable {
     private String userRole;
 
     /**
+     * 钱包余额（分）
+     */
+    private Integer balance;
+
+    /**
+     * 邀请码
+     */
+    private String invitationCode;
+
+    /**
      * 创建时间
      */
     private Date createTime;
@@ -85,6 +95,11 @@ public class User implements Serializable {
      */
     @TableLogic
     private Integer isDelete;
+
+    /**
+     * 用户绑定邮箱
+     */
+    private String userEmail;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

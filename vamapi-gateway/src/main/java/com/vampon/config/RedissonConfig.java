@@ -22,11 +22,33 @@ public class RedissonConfig {
 
     @Bean
     public RedissonClient redissonClient() {
+        // 1. 创建配置
         Config config = new Config();
         config.useSingleServer()
                 .setDatabase(database)
                 .setAddress("redis://" + host + ":" + port);
+        // 2. 创建实例
         RedissonClient redisson = Redisson.create(config);
         return redisson;
     }
 }
+
+//@Configuration
+//@ConfigurationProperties(prefix = "spring.redisson")
+//@Data
+//public class RedissonConfig {
+//
+//    private String host;
+//
+//    private String port;
+//
+//    @Bean
+//    public RedissonClient redissonClient() {
+//        // 1. 创建配置
+//        Config config = new Config();
+//        String redisAddress = String.format("redis://%s:%s", host, port);
+//        config.useSingleServer().setAddress(redisAddress).setDatabase(4);
+//        // 2. 创建实例
+//        return Redisson.create(config);
+//    }
+//}

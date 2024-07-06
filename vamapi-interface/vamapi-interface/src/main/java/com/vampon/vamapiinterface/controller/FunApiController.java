@@ -33,23 +33,14 @@ public class FunApiController {
             return ResultUtils.success(httpResponse.body());
         }
     }
-    /**
-     * 随机头像
-     */
-    @PostMapping("/rand.avatar")
-    public BaseResponse<String> randAvatar(HttpServletRequest request) {
-        String url = "https://api.uomg.com/api/rand.avatar";
-        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
-        return invokeOuterApi(url, body);
-    }
 
     /**
-     * 随机壁纸
+     * 每日星座运势
      */
-    @PostMapping("/sjbz")
+    @PostMapping("/horoscope")
     public BaseResponse<String> randImages(HttpServletRequest request) {
-        String url = "http://api.btstu.cn/sjbz/api.php";
-        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
+        String url = "https://api.vvhan.com/api/horoscope";
+        String body = "type=scorpio&time=today";
         return invokeOuterApi(url, body);
     }
     /**

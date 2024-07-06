@@ -6,9 +6,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.vampon.springbootinit.common.ErrorCode;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.mapper.UserInterfaceInfoMapper;
+import com.vampon.springbootinit.service.InterfaceInfoService;
+import com.vampon.springbootinit.service.UserService;
+import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.UserInterfaceInfo;
 import com.vampon.springbootinit.service.UserInterfaceInfoService;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
 
 /**
 * @author Fang Hao
@@ -18,6 +23,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoMapper, UserInterfaceInfo>
     implements UserInterfaceInfoService {
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private InterfaceInfoService interfaceInfoService;
 
     @Override
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add) {
@@ -46,7 +57,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         updateWrapper.eq("interfaceInfoId", interfaceInfoId);
         updateWrapper.eq("userId", userId);
         updateWrapper.gt("leftNum", 0);
-        // todo:引入事务，使得更安全（目前肯定会存在并发安全问题）
+        // 外部使用了分布式锁，解决并发安全问题
         updateWrapper.setSql("leftNum = leftNum - 1, totalNum = totalNum + 1");
         boolean update = this.update(updateWrapper);
         return update;
@@ -65,6 +76,33 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
             return 0;
         }
         return query.getLeftNum();
+    }
+
+    @Override
+    public boolean invokeProcess(long interfaceInfoId, long userId) {
+        if(interfaceInfoId <= 0 || userId <= 0){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // todo:下面的这些逻辑是不是应该需要事务，不然万一哪一步出错了，更新的消息都需要回滚
+        boolean invoked = invokeCount(interfaceInfoId, userId);
+        if(!invoked){
+            return false;
+        }
+        // 查询接口信息中的扣减积分数
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(interfaceInfoId);
+        int reduceScore = interfaceInfo.getReduceScore();
+        // 接口表对应id的接口调用次数更新
+        boolean added = interfaceInfoService.addInterfaceInvokeCount(interfaceInfoId);
+        if(!added){
+            return false;
+        }
+        // 扣除用户积分余额
+        boolean reduced = userService.reduceWalletBalance(userId, reduceScore);
+        if(!reduced){
+            return false;
+        }
+        return true;
+
     }
 }
 

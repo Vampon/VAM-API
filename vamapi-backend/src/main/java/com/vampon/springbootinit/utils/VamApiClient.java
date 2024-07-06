@@ -39,7 +39,8 @@ public class VamApiClient {
         //密钥一般不能在服务器间进行传输，会被拦截重放，不安全
         // hashMap.put("secretKey",secretKey);
         hashMap.put("nonce", RandomUtil.randomNumbers(4));
-        hashMap.put("body",body);
+        // todo 此处因为涉及到中文参数的时候，就会出现不一致的现象，这里先把请求体去掉，后续再找解决办法
+        // hashMap.put("body",body);
         hashMap.put("timestamp",String.valueOf(System.currentTimeMillis() / 1000));
         hashMap.put("sign",getSign(hashMap, secretKey));
         return hashMap;

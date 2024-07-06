@@ -80,6 +80,21 @@ public class InterfaceInfo implements Serializable {
     @TableLogic //逻辑删除
     private Integer isDeleted;
 
+    /**
+     * 总调用次数
+     */
+    private Long totalInvokes;
+
+    /**
+     * 减少积分个数
+     */
+    private Integer reduceScore;
+
+    /**
+     * 接口头像
+     */
+    private String avatarUrl;
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

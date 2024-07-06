@@ -15,7 +15,10 @@ create table if not exists `interface_info`
     `userId` bigint not null comment '创建人',
     `createTime` datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     `updateTime` datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    `isDeleted` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)'
+    `isDeleted` tinyint default 0 not null comment '是否删除(0-未删, 1-已删)',
+    `totalInvokes` int default 0 not null comment '总调用次数',
+    `reduceScore` tinyint default 0 not null comment '接口花费积分',
+    `avatarUrl` varchar(512) not null comment '接口头像地址'
 ) comment '接口信息';
 
 insert into `interface_info` (`name`, `description`, `url`, `requestHeader`, `responseHeader`, `status`, `method`, `userId`) values ('孔思远', '廖泽洋', 'www.wanita-schiller.com', '史鸿煊', '林聪健', 0, '苏子涵', 1897);

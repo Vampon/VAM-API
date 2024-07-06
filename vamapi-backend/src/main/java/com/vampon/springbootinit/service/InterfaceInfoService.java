@@ -32,4 +32,7 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
     void deleteRedisCache(Long id);
 
     InterfaceInfo getInterfaceInfoById(Long id);
+
+    boolean addInterfaceInvokeCount(Long interfaceInfoId);
+
 }

@@ -60,5 +60,20 @@ public class LoginUserVO implements Serializable {
      */
     private String secretKey;
 
+    /**
+     * 用户绑定邮箱
+     */
+    private String userEmail;
+
+    /**
+     * 钱包余额（分）
+     */
+    private Integer balance;
+
+    /**
+     * 邀请码
+     */
+    private String invitationCode;
+
     private static final long serialVersionUID = 1L;
 }

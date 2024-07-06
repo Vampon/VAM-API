@@ -16,5 +16,19 @@ public interface InnerUserInterfaceInfoService{
      */
     boolean invokeCount(long interfaceInfoId, long userId);
 
+    /**
+     * 获取接口剩余调用次数
+     * @param interfaceInfoId
+     * @param userId
+     * @return
+     */
     int getUserInterfaceInfoLeftNum(long interfaceInfoId, long userId);
+
+    /**
+     * 调用接口相关信息处理（接口表调用次数+1，用户接口表次数更新，用户积分扣减）
+     * @param interfaceInfoId
+     * @param userId
+     * @return
+     */
+    boolean invokeProcess(long interfaceInfoId, long userId);
 }

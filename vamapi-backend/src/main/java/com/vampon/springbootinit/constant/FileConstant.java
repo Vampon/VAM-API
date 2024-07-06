@@ -10,7 +10,7 @@ public interface FileConstant {
 
     /**
      * COS 访问地址
-     * todo 需替换配置
+     * todo 需替换成备案后的域名
      */
-    String COS_HOST = "https://vampon.club";
+    String COS_HOST = "https://vamapi-1301005258.cos.ap-beijing.myqcloud.com";
 }

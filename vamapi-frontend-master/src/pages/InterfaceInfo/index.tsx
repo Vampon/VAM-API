@@ -591,7 +591,7 @@ const ListOpenApiInfo: React.FC = () => {
             <Descriptions.Item label="请求地址">{data.url}</Descriptions.Item>
             {/*<Descriptions.Item label="返回格式">{data.returnFormat}</Descriptions.Item>*/}
             <Descriptions.Item label="请求方式"><Tag color="blue">{data.method}</Tag></Descriptions.Item>
-            {/*<Descriptions.Item label="请求示例">{data.requestExample}</Descriptions.Item>*/}
+            <Descriptions.Item label="消耗V金">{data.reduceScore}</Descriptions.Item>
             <Descriptions.Item label="接口状态">
               {data && data.status === 0 ? (
                 <Badge

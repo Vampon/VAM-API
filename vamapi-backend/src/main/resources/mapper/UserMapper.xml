@@ -15,14 +15,17 @@
         <result property="userAvatar" column="userAvatar" jdbcType="VARCHAR"/>
         <result property="userProfile" column="userProfile" jdbcType="VARCHAR"/>
         <result property="userRole" column="userRole" jdbcType="VARCHAR"/>
+        <result property="balance" column="balance" jdbcType="INTEGER"/>
+        <result property="invitationCode" column="invitationCode" jdbcType="VARCHAR"/>
         <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
         <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
         <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <result property="userEmail" column="userEmail" jdbcType="VARCHAR"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,unionId,mpOpenId,accessKey,secretKey,
         userName,userAvatar,userProfile,
-        userRole,createTime,updateTime,isDelete
+        userRole,balance,invitationCode,createTime,updateTime,isDelete,userEmail
     </sql>
 </mapper>

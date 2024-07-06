@@ -6,6 +6,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.vampon.springbootinit.common.BaseResponse;
@@ -273,6 +274,15 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
 //    public Long getInterfaceInfoTotalInvokesCount() {
 //        return interfaceInfoMapper.getInterfaceInfoTotalInvokesCount().longValue();
 //    }
+
+
+    @Override
+    public boolean addInterfaceInvokeCount(Long interfaceInfoId) {
+        LambdaUpdateWrapper<InterfaceInfo> interfaceInfoLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        interfaceInfoLambdaUpdateWrapper.eq(InterfaceInfo::getId, interfaceInfoId);
+        interfaceInfoLambdaUpdateWrapper.setSql("totalInvokes = totalInvokes + " + 1);
+        return this.update(interfaceInfoLambdaUpdateWrapper);
+    }
 
 }
 

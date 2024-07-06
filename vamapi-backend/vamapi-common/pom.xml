@@ -91,12 +91,16 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
-
+        <!-- 微信支付V3 Java SDK -->
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-pay</artifactId>
+            <version>4.5.0</version>
+        </dependency>
     </dependencies>
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

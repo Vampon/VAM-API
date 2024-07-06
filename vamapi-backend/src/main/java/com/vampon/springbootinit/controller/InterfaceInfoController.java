@@ -16,6 +16,7 @@ import com.vampon.springbootinit.utils.VamApiClient;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 接口管理
@@ -290,6 +292,63 @@ public class InterfaceInfoController {
         return ResultUtils.success(invokeResult);
     }
 
+    /**
+     * 按搜索文本页查询数据
+     * todo:将逻辑合并到query里
+     * @param interfaceInfoQueryRequest 接口信息查询请求
+     * @param request                   请求
+     * @return
+     */
+    @GetMapping("/get/searchText")
+    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfoBySearchTextPage(InterfaceInfoSearchTextRequest interfaceInfoQueryRequest, HttpServletRequest request) {
+        if (interfaceInfoQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        InterfaceInfo interfaceInfoQuery = new InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfoQueryRequest, interfaceInfoQuery);
+
+        String searchText = interfaceInfoQueryRequest.getSearchText();
+        long size = interfaceInfoQueryRequest.getPageSize();
+        long current = interfaceInfoQueryRequest.getCurrent();
+        String sortField = interfaceInfoQueryRequest.getSortField();
+        String sortOrder = interfaceInfoQueryRequest.getSortOrder();
+
+        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(searchText)) {
+            queryWrapper.and(qw -> qw.like(StringUtils.isNotBlank(searchText), "name", searchText)
+                    .or()
+                    .like(StringUtils.isNotBlank(searchText), "description", searchText));
+        }
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
+        Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
+        // 不是管理员只能查看已经上线的
+        if (!userService.isAdmin(request)) {
+            List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
+                    .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceInfoStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
+            interfaceInfoPage.setRecords(interfaceInfoList);
+        }
+        return ResultUtils.success(interfaceInfoPage);
+    }
+
+    /**
+     * 更新接口头像url
+     *
+     * @param request                          请求
+     * @param interfaceInfoUpdateAvatarRequest 界面信息更新头像请求
+     * @return
+     */
+    @PostMapping("/updateInterfaceInfoAvatar")
+    @AuthCheck(mustRole = "admin")
+    public BaseResponse<Boolean> updateInterfaceInfoAvatarUrl(@RequestBody InterfaceInfoUpdateAvatarRequest interfaceInfoUpdateAvatarRequest,
+                                                              HttpServletRequest request) {
+        if (ObjectUtils.anyNull(interfaceInfoUpdateAvatarRequest, interfaceInfoUpdateAvatarRequest.getId()) || interfaceInfoUpdateAvatarRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfoUpdateAvatarRequest, interfaceInfo);
+        System.out.println("AvatarUrl:" + interfaceInfoUpdateAvatarRequest.getAvatarUrl());
+        return ResultUtils.success(interfaceInfoService.updateById(interfaceInfo));
+    }
 
 
 

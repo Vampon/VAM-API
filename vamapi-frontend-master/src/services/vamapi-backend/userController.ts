@@ -26,6 +26,21 @@ export async function banUserUsingPost(body: API.IdRequest, options?: { [key: st
   });
 }
 
+/** userBindEmail POST /api/user/bind/login */
+export async function userBindEmailUsingPost(
+  body: API.UserBindEmailRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseUserVO_>('/api/user/bind/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
 /** deleteUser POST /api/user/delete */
 export async function deleteUserUsingPost(
   body: API.DeleteRequest,
@@ -71,6 +86,21 @@ export async function getUserVoByIdUsingGet(
   options?: { [key: string]: any },
 ) {
   return request<API.BaseResponseUserVO_>('/api/user/get/vo', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
+  });
+}
+
+/** getCaptcha GET /api/user/getCaptcha */
+export async function getCaptchaUsingGet(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.getCaptchaUsingGETParams,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseBoolean_>('/api/user/getCaptcha', {
     method: 'GET',
     params: {
       ...params,
