@@ -94,6 +94,14 @@ export async function getUserVoByIdUsingGet(
   });
 }
 
+/** getUserVoucher GET /api/user/get/voucher */
+export async function getUserVoucherUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseString_>('/api/user/get/voucher', {
+    method: 'GET',
+    ...(options || {}),
+  });
+}
+
 /** getCaptcha GET /api/user/getCaptcha */
 export async function getCaptchaUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
@@ -230,6 +238,14 @@ export async function updateMyUserUsingPost(
       'Content-Type': 'application/json',
     },
     data: body,
+    ...(options || {}),
+  });
+}
+
+/** updateUserVoucher POST /api/user/update/voucher */
+export async function updateUserVoucherUsingPost(options?: { [key: string]: any }) {
+  return request<API.BaseResponseBoolean_>('/api/user/update/voucher', {
+    method: 'POST',
     ...(options || {}),
   });
 }

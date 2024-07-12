@@ -4,8 +4,11 @@ import com.vampon.exception.BusinessException;
 import com.vampon.manager.RedisLimiterManager;
 import com.vampon.vamapicommon.common.ErrorCode;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
+import com.vampon.vamapicommon.model.entity.InterfaceLog;
 import com.vampon.vamapicommon.model.entity.User;
+import com.vampon.vamapicommon.model.enums.UserRoleEnum;
 import com.vampon.vamapicommon.service.InnerInterfaceInfoService;
+import com.vampon.vamapicommon.service.InnerInterfaceLogService;
 import com.vampon.vamapicommon.service.InnerUserInterfaceInfoService;
 import com.vampon.vamapicommon.service.InnerUserService;
 import com.vampon.vamapigateway.utils.RedissonLockUtil;
@@ -30,6 +33,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 import static com.vampon.vamapicommon.model.enums.UserRoleEnum.BAN;
@@ -48,11 +53,22 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @DubboReference
     private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
 
+    @DubboReference
+    private InnerInterfaceLogService interfaceLogService;
+
 //    @Resource
 //    private RedisLimiterManager redisLimiterManager;
 
     @Resource
     private RedissonLockUtil redissonLockUtil;
+
+
+    // threadLocalVariable.set(threadLocalVariable.get() + 1);
+    // 接口调用开始时间
+    private Long startTime = null;
+    // 考虑到并发安全问题，弃用上述方式，选用ThreadLocal实现
+    // private ThreadLocal<Long> startTime = ThreadLocal.withInitial(() -> 0L);
+
 
     private static final List<String> IP_WHERE_LIST = Arrays.asList("127.0.0.1");//测试白名单
 
@@ -68,14 +84,28 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         // 用户发送请求到API网关（默认能达到这里就已经算完成）
+        // startTime.set(startTime.get() + LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli());
+        startTime = LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli();
         // 请求日志
         ServerHttpRequest request = exchange.getRequest();
+        // 记录请求流量，获取请求内容长度
+        // todo:这块数据大小记录的不对，一直为-1
+        Long requestContentLength = request.getHeaders().getContentLength();
         String path = GATEWAY_HOST + request.getPath().value();
         String method = request.getMethod().toString();
+        String url = request.getURI().toString().trim();
+        // 获取公网ip
+        HttpHeaders headers = request.getHeaders();
+        String ipAddress = headers.getFirst("X-Real-IP");
+        String uri = headers.getFirst("X-Original-URI");
+        String host = headers.getFirst("X-Original-Host");
+        String scheme = headers.getFirst("X-Original-Scheme");
+
         log.info("请求唯一标识" + request.getId());
         log.info("请求路径" + path);
         log.info("请求方法" + method);
         log.info("请求参数" + request.getQueryParams());
+        log.info("请求流量（bytes）：" + requestContentLength);
         String sourceAddress = request.getLocalAddress().getHostString();
         log.info("请求来源地址" + sourceAddress);
         log.info("请求来源地址" + request.getRemoteAddress());
@@ -88,7 +118,6 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             return response.setComplete();
         }
         // 用户鉴权（ak,sk）
-        HttpHeaders headers = request.getHeaders();
         String accessKey = headers.getFirst("accessKey");
         String nonce = headers.getFirst("nonce");
         String timestamp = headers.getFirst("timestamp");
@@ -100,8 +129,14 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             invokeUser = innerUserService.getInvokeUser(accessKey);
         }catch (Exception e){
             log.error("getInvokeUser error", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取用户信息失败");
         }
         if(invokeUser == null){
+            return handleNoAuth(response);
+        }
+        // 如果用户被封号，直接拒绝
+        if("ban".equals(invokeUser.getUserRole())){
+
             return handleNoAuth(response);
         }
 
@@ -154,21 +189,24 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             interfaceInfo = innerInterfaceInfoService.getInterfaceInfo(path, method);
         }catch (Exception e){
             log.error("getInterfaceInfo error", e);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口信息不存在");
         }
         if(interfaceInfo == null){
             return handleNoAuth(response);
         }
-        // todo: 校验是否还有调用次数(done) 但是调用失败没有提示，这个得再看看看，它就卡在那里
-        try {
-            int leftNum = innerUserInterfaceInfoService.getUserInterfaceInfoLeftNum(interfaceInfo.getId(), invokeUser.getId());
-            if(leftNum <= 0){
-                return handleNoAuth(response);
-            }
-        } catch (Exception e) {
-            log.error("getUserInterfaceInfoLeftNum error", e);
-        }
+        // 校验是否还有调用次数(done)
+        // todo:这块是历史遗留逻辑，以后按照积分去判断
+//        try {
+//            int leftNum = innerUserInterfaceInfoService.getUserInterfaceInfoLeftNum(interfaceInfo.getId(), invokeUser.getId());
+//            if(leftNum <= 0){
+//                return handleNoAuth(response);
+//            }
+//        } catch (Exception e) {
+//            log.error("getUserInterfaceInfoLeftNum error", e);
+//            throw new BusinessException(ErrorCode.OPERATION_ERROR, "用户调用次数不足");
+//        }
         // 请求转发，调用模拟接口 + 响应日志（done）
-        return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId());
+        return handleResponse(exchange, chain, interfaceInfo.getId(), invokeUser.getId(), ipAddress, requestContentLength);
 
 //        Mono<Void> filter = chain.filter(exchange);
 //        // 响应日志
@@ -192,7 +230,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
      * @param chain
      * @return
      */
-    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain, long interfaceInfoId, long userId) { // , long interfaceInfoId, long userId
+    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain, long interfaceInfoId, long userId, String ipAddress, long requestContentLength) { // , long interfaceInfoId, long userId
         try {
             ServerHttpResponse originalResponse = exchange.getResponse();
             // 缓存数据的工厂
@@ -213,20 +251,23 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                             return super.writeWith(
                                     fluxBody.map(dataBuffer -> {
                                         // 调用成功，接口调用次数 + 1 invokeCount
-                                        // todo:这块需要添加用户扣除积分，用户更新调用次数字段，可以都塞入invokeCount函数里
 //                                        try {
 //                                            innerUserInterfaceInfoService.invokeCount(interfaceInfoId, userId);
 //                                        } catch (Exception e) {
 //                                            log.error("invokeCount error", e);
 //                                        }
-                                        // 扣除积分
+                                        // 扣除积分（分布式锁保证并发安全性）
                                         redissonLockUtil.redissonDistributedLocks(("gateway_" + userId).intern(), () -> {
+                                            log.info("调用请求后扣款方法：interfaceId:{}  userId:{}", interfaceInfoId, userId);
                                             boolean invoke = innerUserInterfaceInfoService.invokeProcess(interfaceInfoId, userId);
-                                            System.out.println("gateway_" + userId);
                                             if (!invoke) {
-                                                throw new BusinessException(ErrorCode.OPERATION_ERROR, "接口调用失败");
+                                                throw new BusinessException(ErrorCode.OPERATION_ERROR, "接口调用繁忙，请稍后再试");
                                             }
                                         }, "接口调用失败");
+                                        log.info("网关调用接口调用次数+1: {}", interfaceInfoId);
+                                        log.info("开始存储日志......");
+                                        interfaceLogService.save(interfaceInfoId, userId, startTime, ipAddress, requestContentLength);
+                                        log.info("日志存储完成");
                                         byte[] content = new byte[dataBuffer.readableByteCount()];
                                         dataBuffer.read(content);
                                         DataBufferUtils.release(dataBuffer);//释放掉内存
@@ -239,6 +280,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                                         // 打印日志
                                         log.info("响应结果：" + data);
                                         return bufferFactory.wrap(content);
+
                                     }));
                         } else {
                             // 调用失败，返回一个规范的错误码

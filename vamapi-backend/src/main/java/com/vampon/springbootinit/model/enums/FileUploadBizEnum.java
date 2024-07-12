@@ -15,7 +15,9 @@ public enum FileUploadBizEnum {
 
     USER_AVATAR("用户头像", "user_avatar"),
 
-    INTERFACE_AVATAR("接口头像", "interface_avatar");
+    INTERFACE_AVATAR("接口头像", "interface_avatar"),
+
+    USER_VOUCHER("凭证文件", "user_voucher");
 
     private final String text;
 

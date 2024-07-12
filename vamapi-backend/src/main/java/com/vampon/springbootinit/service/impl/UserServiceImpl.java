@@ -11,14 +11,24 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.vampon.springbootinit.common.ErrorCode;
 import com.vampon.springbootinit.constant.CommonConstant;
 import com.vampon.springbootinit.exception.BusinessException;
+import com.vampon.springbootinit.manager.CosManager;
 import com.vampon.springbootinit.mapper.UserMapper;
 import com.vampon.springbootinit.model.dto.user.UserBindEmailRequest;
 import com.vampon.springbootinit.model.dto.user.UserQueryRequest;
+import com.vampon.springbootinit.model.entity.UserVoucherurlInfo;
+import com.vampon.springbootinit.model.enums.FileUploadBizEnum;
 import com.vampon.springbootinit.model.enums.UserRoleEnum;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
 import com.vampon.springbootinit.model.vo.UserVO;
+import com.vampon.springbootinit.service.FileService;
 import com.vampon.springbootinit.service.UserService;
+import com.vampon.springbootinit.service.UserVoucherurlInfoService;
 import com.vampon.springbootinit.utils.SqlUtils;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +63,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private RedisTemplate<String, String> redisTemplate;
 
+    @Resource
+    private FileService fileService;
+
+    @Resource
+    private UserVoucherurlInfoService userVoucherurlInfoService;
+
+    @Resource
+    private CosManager cosManager;
+
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
         // 1. 校验
@@ -86,11 +105,44 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             User user = new User();
             user.setUserAccount(userAccount);
             user.setUserPassword(encryptPassword);
+            user.setBalance(10000);
             user.setAccessKey(accessKey);
             user.setSecretKey(secretKey);
             boolean saveResult = this.save(user);
             if (!saveResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
+            }
+            // 生成临时csv文件
+            File tempFile = null;
+            String uploadFilePath = null;
+            FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.getEnumByValue("user_voucher");
+            try {
+                // 生成临时文件
+                tempFile = File.createTempFile("credentials", ".csv");
+                // 写入CSV文件
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+                    writer.write("AccessKey,SecretKey\n");
+                    writer.write(accessKey + "," + secretKey);
+                } catch (IOException e) {
+                    log.info("文件写入失败");
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户凭证文件写入失败");
+                }
+                // 上传文件到OSS
+                // cosManager.putObject(tempFile.getName(), tempFile);
+                uploadFilePath = fileService.uploadFile(tempFile, fileUploadBizEnum, user);
+                log.info("凭证文件成功上传至OSS.");
+            } catch (IOException e) {
+                log.error("Error generating or uploading credentials file", e);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户凭证文件上传失败");
+            }
+            // 添加信息到用户凭证表
+            UserVoucherurlInfo userVoucherurlInfo = new UserVoucherurlInfo();
+            userVoucherurlInfo.setUserId(user.getId());
+            userVoucherurlInfo.setVoucherUrl(uploadFilePath);
+            userVoucherurlInfo.setDownloadStatus(0);
+            boolean saved = userVoucherurlInfoService.save(userVoucherurlInfo);
+            if(! saved){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户凭证信息上传失败");
             }
             return user.getId();
         }
@@ -304,18 +356,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public UserVO updateVoucher(User loginUser) {
+    public boolean updateVoucher(User loginUser) {
+        // 更新凭证信息
         String accessKey = DigestUtils.md5DigestAsHex((Arrays.toString(RandomUtil.randomBytes(10)) + SALT ).getBytes());
         String secretKey = DigestUtils.md5DigestAsHex((SALT + Arrays.toString(RandomUtil.randomBytes(10))).getBytes());
+        // 生成临时csv文件
+        File tempFile = null;
+        String uploadFilePath = null;
+        FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.getEnumByValue("user_voucher");
+        try {
+            // 生成临时文件
+            tempFile = File.createTempFile("credentials", ".csv");
+            // 写入CSV文件
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+                writer.write("AccessKey,SecretKey\n");
+                writer.write(accessKey + "," + secretKey);
+            } catch (IOException e) {
+                log.info("文件写入失败");
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户凭证文件写入失败");
+            }
+            // 上传文件到OSS
+            // cosManager.putObject(tempFile.getName(), tempFile);
+            uploadFilePath = fileService.uploadFile(tempFile, fileUploadBizEnum, loginUser);
+            log.info("用户凭证文件成功上传至OSS.");
+        } catch (IOException e) {
+            log.error("Error generating or uploading credentials file", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
+        }
+        // 更新用户表
         loginUser.setAccessKey(accessKey);
         loginUser.setSecretKey(secretKey);
         boolean result = this.updateById(loginUser);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
-        UserVO userVO = new UserVO();
-        BeanUtils.copyProperties(loginUser, userVO);
-        return userVO;
+        // 更新用户凭证表
+        UserVoucherurlInfo userVoucherurlInfo = new UserVoucherurlInfo();
+        // userVoucherurlInfo.setUserId(loginUser.getId());
+        userVoucherurlInfo.setVoucherUrl(uploadFilePath);
+        userVoucherurlInfo.setDownloadStatus(0);
+        LambdaUpdateWrapper<UserVoucherurlInfo> userVoucherurlInfoLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        userVoucherurlInfoLambdaUpdateWrapper.eq(UserVoucherurlInfo::getUserId, loginUser.getId());
+        boolean updated = userVoucherurlInfoService.update(userVoucherurlInfo, userVoucherurlInfoLambdaUpdateWrapper);
+        return updated;
     }
 
     @Override
@@ -344,7 +427,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 查询邮箱是否已经绑定
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("email", emailAccount);
+        queryWrapper.eq("userEmail", emailAccount);
         User user = this.getOne(queryWrapper);
         if (user != null) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "此邮箱已被绑定,请更换新的邮箱！");
@@ -361,6 +444,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BeanUtils.copyProperties(loginUser, userVO);
         return userVO;
     }
+
 
 
 }

@@ -151,6 +151,7 @@ public interface UserService extends IService<User> {
      * @param loginUser
      * @return
      */
-    public UserVO updateVoucher(User loginUser);
+    public boolean updateVoucher(User loginUser);
+
 
 }

@@ -17,18 +17,18 @@ const Footer: React.FC = () => {
           href: 'https://pro.ant.design',
           blankTarget: true,
         },
-        {
-          key: 'github',
-          title: <GithubOutlined />,
-          href: 'https://github.com/Vampon',
-          blankTarget: true,
-        },
-        {
-          key: 'VAM接口',
-          title: 'VAM接口',
-          href: 'https://github.com/Vampon',
-          blankTarget: true,
-        },
+        // {
+        //   key: 'github',
+        //   title: <GithubOutlined />,
+        //   href: 'https://github.com/Vampon',
+        //   blankTarget: true,
+        // },
+        // {
+        //   key: 'VAM接口',
+        //   title: 'VAM接口',
+        //   href: 'https://github.com/Vampon',
+        //   blankTarget: true,
+        // },
       ]}
     />
   );

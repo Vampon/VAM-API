@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import ProCard from "@ant-design/pro-card";
-import {Badge, Card, Image, List, Spin, Tag} from "antd";
+import {Badge, Image, List, Spin, Tag} from "antd";
 import Search from "antd/es/input/Search";
 import {history} from "@umijs/max";
 import {
@@ -14,14 +14,20 @@ import {
   EllipsisOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import {
+  getStatisticsInfoUsingGet,
+} from "@/services/vamapi-backend/analysisController";
+
+
 const InterfaceSquare: React.FC = () => {
   const [data, setData] = useState<API.InterfaceInfo[]>([]);
   const [searchText, setSearchText] = useState<string>('');
   const [total, setTotal] = useState<number>();
   const [pageSize] = useState<number>(12);
-  const [totalInvokes, setTotalInvokes] = useState<number>(0);
+  const [statisticsData, setstatisticsData] = useState<API.UserInterfaceInfoLog>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [responsive, setResponsive] = useState(false);
+  const [visitCount, setVisitCount] = useState(1523);
   const loadData = async (current = 1) => {
     setLoading(true)
     const res = await listInterfaceInfoByPageUsingGet({
@@ -38,16 +44,52 @@ const InterfaceSquare: React.FC = () => {
       // setData(res?.data?.records || []);
       setTotal(res.data.total)
       setLoading(false)
-      const totalInvokesSum = fetchedData.reduce((sum, item) => sum + item.totalInvokes, 0);
-      setTotalInvokes(totalInvokesSum);
+/*      const totalInvokesSum = fetchedData.reduce((sum, item) => sum + item.totalInvokes, 0);
+      setTotalInvokes(totalInvokesSum);*/
     } else {
       setLoading(false)
     }
   };
 
+  const loadStatisticData = async () => {
+    try {
+      getStatisticsInfoUsingGet().then(res => {
+        if (res.data) {
+          setstatisticsData(res.data);
+        }
+      })
+    } catch (e: any) {
+
+    }
+  };
+
+  const loadVisitCount = async () => {
+    // 从 localStorage 获取当前的计数
+    const visitCountTemp = localStorage.getItem('visitCount');
+    if (visitCountTemp) {
+      const newCount = parseInt(visitCountTemp, 10) + 1;
+      localStorage.setItem('visitCount', newCount);
+      setVisitCount(newCount);
+    } else {
+      // 如果 localStorage 中没有计数，则初始化为 1
+      localStorage.setItem('visitCount', 1523);
+      setVisitCount(1523);
+    }
+  }
+
   useEffect(() => {
     loadData();
+    loadStatisticData();
+    loadVisitCount();
   }, []);
+
+  const getInterfaceCount = () => {
+    let count = 0;
+    for (let i = 0; i < data.length; i++) {
+      count = count + parseInt(data[i].totalInvokes);
+    }
+    return count;
+  };
 
 
   const imgStyle = {
@@ -79,13 +121,13 @@ const InterfaceSquare: React.FC = () => {
         <StatisticCard.Group direction={responsive ? 'column' : 'row'}>
           <StatisticCard
             statistic={{
-              title: '接口调用',
-              value: totalInvokes,
+              title: '接口调用总次数',
+              value: getInterfaceCount(),
               tip:"test",
               icon: (
                 <img
                   style={imgStyle}
-                  src="https://gw.alipayobjects.com/mdn/rms_7bc6d8/afts/img/A*dr_0RKvVzVwAAAAAAAAAAABkARQnAQ"
+                  src="https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/system_file/总调用次数.png"
                   alt="icon"
                 />
               ),
@@ -93,13 +135,13 @@ const InterfaceSquare: React.FC = () => {
           />
           <StatisticCard
             statistic={{
-              title: '网站访问',
-              value: 1754,
+              title: '最近调用平均响应时延',
+              value: statisticsData.interfaceInfoAverageRequestDuration + "ms",
               tip:"test",
               icon: (
                 <img
                   style={imgStyle}
-                  src="https://gw.alipayobjects.com/mdn/rms_7bc6d8/afts/img/A*dr_0RKvVzVwAAAAAAAAAAABkARQnAQ"
+                  src="https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/system_file/时延.png"
                   alt="icon"
                 />
               ),
@@ -107,12 +149,12 @@ const InterfaceSquare: React.FC = () => {
           />
           <StatisticCard
             statistic={{
-              title: '平均时延',
-              value: 1754,
+              title: '接口接入数量',
+              value: total,
               icon: (
                 <img
                   style={imgStyle}
-                  src="https://gw.alipayobjects.com/mdn/rms_7bc6d8/afts/img/A*-jVKQJgA1UgAAAAAAAAAAABkARQnAQ"
+                  src="https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/system_file/服务数量.png"
                   alt="icon"
                 />
               ),
@@ -120,12 +162,12 @@ const InterfaceSquare: React.FC = () => {
           />
           <StatisticCard
             statistic={{
-              title: '虚位待定',
-              value: 1754,
+              title: '网站浏览量',
+              value: visitCount,
               icon: (
                 <img
                   style={imgStyle}
-                  src="https://gw.alipayobjects.com/mdn/rms_7bc6d8/afts/img/A*FPlYQoTNlBEAAAAAAAAAAABkARQnAQ"
+                  src="https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/system_file/访问量.png"
                   alt="icon"
                 />
               ),

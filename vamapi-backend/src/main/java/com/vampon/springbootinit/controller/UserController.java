@@ -2,6 +2,7 @@ package com.vampon.springbootinit.controller;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.vampon.springbootinit.annotation.AuthCheck;
 import com.vampon.springbootinit.common.*;
@@ -9,7 +10,9 @@ import com.vampon.springbootinit.config.EmailConfig;
 import com.vampon.springbootinit.constant.UserConstant;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.exception.ThrowUtils;
+import com.vampon.springbootinit.mapper.UserVoucherurlInfoMapper;
 import com.vampon.springbootinit.model.dto.user.*;
+import com.vampon.springbootinit.model.entity.UserVoucherurlInfo;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
 import com.vampon.springbootinit.model.vo.UserVO;
 import com.vampon.springbootinit.service.UserService;
@@ -24,6 +27,7 @@ import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.vampon.springbootinit.service.UserVoucherurlInfoService;
 import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -57,14 +61,14 @@ public class UserController {
 
     @Resource
     private UserService userService;
-
     @Resource
     private RedisTemplate<String, String> redisTemplate;
-
     @Resource
     private EmailConfig emailConfig;
     @Resource
     private JavaMailSender mailSender;
+    @Resource
+    private UserVoucherurlInfoService userVoucherurlInfoService;
 
 
     // region 登录相关
@@ -352,6 +356,24 @@ public class UserController {
     }
 
     /**
+     * 更新个人凭证
+     *
+     * @param request
+     * @return
+     */
+    @PostMapping("/update/voucher")
+    public BaseResponse<Boolean> updateUserVoucher(HttpServletRequest request){
+        // 获取用户信息
+        User loginUser = userService.getLoginUser(request);
+        if(loginUser == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        boolean result = userService.updateVoucher(loginUser);
+
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 解封
      *
      * @param idRequest id请求
@@ -447,4 +469,33 @@ public class UserController {
         UserVO user = userService.userBindEmail(userBindEmailRequest, request);
         return ResultUtils.success(user);
     }
+
+    /**
+     * 获取凭证信息URL
+     *
+     * @param request
+     * @return
+     */
+    @GetMapping("/get/voucher")
+    public BaseResponse<String> getUserVoucher(HttpServletRequest request) {
+        // 获取用户信息
+        User loginUser = userService.getLoginUser(request);
+        if(loginUser == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        // 先查询用户凭证
+        QueryWrapper<UserVoucherurlInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", loginUser.getId());
+        UserVoucherurlInfo userVoucherurlInfo = userVoucherurlInfoService.getOne(queryWrapper);
+        if(userVoucherurlInfo.getDownloadStatus()==1){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"凭证文件已下载，不可重复下载");
+        }
+        // 然后更新下载状态
+        userVoucherurlInfo.setDownloadStatus(1);
+        LambdaUpdateWrapper<UserVoucherurlInfo> userVoucherurlInfoLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        userVoucherurlInfoLambdaUpdateWrapper.eq(UserVoucherurlInfo::getUserId, loginUser.getId());
+        boolean updated = userVoucherurlInfoService.update(userVoucherurlInfo, userVoucherurlInfoLambdaUpdateWrapper);
+        return ResultUtils.success(userVoucherurlInfo.getVoucherUrl());
+    }
+
 }

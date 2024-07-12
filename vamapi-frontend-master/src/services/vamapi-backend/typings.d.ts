@@ -149,6 +149,12 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseUserInterfaceInfoLog_ = {
+    code?: number;
+    data?: UserInterfaceInfoLog;
+    message?: string;
+  };
+
   type BaseResponseUserVO_ = {
     code?: number;
     data?: UserVO;
@@ -237,7 +243,7 @@ declare namespace API {
     method?: string;
     name?: string;
     requestHeader?: string;
-    requestParams?: string;
+    requestParams?: RequestParamsField[];
     responseHeader?: string;
     url?: string;
   };
@@ -414,11 +420,14 @@ declare namespace API {
 
   type LoginUserVO = {
     accessKey?: string;
+    balance?: number;
     createTime?: string;
     id?: number;
+    invitationCode?: string;
     secretKey?: string;
     updateTime?: string;
     userAvatar?: string;
+    userEmail?: string;
     userName?: string;
     userProfile?: string;
     userRole?: string;
@@ -685,6 +694,13 @@ declare namespace API {
     total?: string;
   };
 
+  type RequestParamsField = {
+    desc?: string;
+    fieldName?: string;
+    required?: string;
+    type?: string;
+  };
+
   type uploadFileUsingPOSTParams = {
     biz?: string;
   };
@@ -739,6 +755,13 @@ declare namespace API {
     status?: number;
     totalNum?: number;
     userId?: number;
+  };
+
+  type UserInterfaceInfoLog = {
+    interfaceInfoAverageRequestDuration?: number;
+    interfaceTotalInvokeCount?: number;
+    interfaceTotalNum?: number;
+    userTotalNum?: number;
   };
 
   type UserInterfaceInfoUpdateRequest = {
@@ -797,12 +820,5 @@ declare namespace API {
     userName?: string;
     userProfile?: string;
     userRole?: string;
-  };
-
-  type RequestParamsField = {
-    desc?: string;
-    fieldName?: string;
-    required?: string;
-    type?: string;
   };
 }

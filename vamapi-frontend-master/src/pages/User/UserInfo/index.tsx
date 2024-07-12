@@ -1,11 +1,13 @@
-import {ProCard, ProDescriptions, ProFormUploadDragger} from '@ant-design/pro-components';
+import {ProCard, ProDescriptions, ProField, ProFormUploadDragger} from '@ant-design/pro-components';
 import {
   getLoginUserUsingGet,
-  // updateMyUserCertificateUsingPost,
+  updateUserVoucherUsingPost,
   updateUserUsingPost,
+  getUserVoucherUsingGet,
+
 } from '@/services/vamapi-backend/userController';
 import {values} from 'lodash';
-import {Button, message, DownloadOutlined} from 'antd';
+import {Button, message, DownloadOutlined, Card, Descriptions} from 'antd';
 import {useState} from 'react';
 import {VAMAPI_CLIENT_SDK} from "@/constants";
 import { Image } from 'antd';
@@ -29,24 +31,22 @@ const UserInfo: React.FC = () => {
    * @zh-CN 更新凭证
    * @param currentRow
    */
-  // const handleUpdateCertificate = async (currentRow: API.IdRequest) => {
-  //   const hide = message.loading('正在更新');
-  //   if (!currentRow) return true;
-  //   try {
-  //     await updateMyUserCertificateUsingPost({
-  //       id: currentRow.id,
-  //     });
-  //     hide();
-  //     message.success('更新成功');
-  //     // 点击按钮时更新状态变量的值
-  //     setReloadFlag(prevFlag => !prevFlag);
-  //     return true;
-  //   } catch (error: any) {
-  //     hide();
-  //     message.error('更新失败，' + error.message);
-  //     return false;
-  //   }
-  // };
+  const handleUpdateCertificate = async () => {
+    const hide = message.loading('正在更新');
+    try {
+      await updateUserVoucherUsingPost({
+      });
+      hide();
+      message.success('更新成功');
+      // 点击按钮时更新状态变量的值
+      setReloadFlag(prevFlag => !prevFlag);
+      return true;
+    } catch (error: any) {
+      hide();
+      message.error('更新失败，' + error.message);
+      return false;
+    }
+  };
 
   return (
     <ProCard
@@ -158,49 +158,61 @@ const UserInfo: React.FC = () => {
         extra={
           <Button
             onClick={() => {
-              // handleUpdateCertificate(currentRow);
+              handleUpdateCertificate();
             }}
           >
             更新凭证
           </Button>
         }
       >
-        <ProDescriptions
-          column={1}
-          request={async () => {
-            const res = await getLoginUserUsingGet({
-              ...values(),
-            });
+        <Descriptions column={1}>
+          <Descriptions.Item label="提示">
+            <ProField text="鉴于数据传输安全性的严格要求，用户凭证文件设计为单次下载机制，以确保信息安全。请用户妥善保管此文件，以免遗失。一旦文件不慎丢失，建议立即更新凭证。" mode="read" />
+          </Descriptions.Item>
+        </Descriptions>
+        <Button onClick={() => {
+          getUserVoucherUsingGet().then(url => {
+            window.open(url.data, '_blank');
+          });
+        }}>
+          下载用户凭证
+        </Button>
+        {/*<ProDescriptions*/}
+        {/*  column={1}*/}
+        {/*  request={async () => {*/}
+        {/*    const res = await getLoginUserUsingGet({*/}
+        {/*      ...values(),*/}
+        {/*    });*/}
 
-            setCurrentRow(res.data);
-            if (res?.data) {
-              return {
-                data: res?.data || '',
-                success: true,
-                total: res.data,
-              };
-            } else {
-              return {
-                data: '',
-                success: false,
-                total: 0,
-              };
-            }
-          }}
-          emptyText={'空'}
-          columns={[
-            {
-              title: 'AccessKey',
-              dataIndex: 'accessKey',
-              copyable: true,
-            },
-            {
-              title: 'SecretKey',
-              dataIndex: 'secretKey',
-              copyable: true,
-            },
-          ]}
-        ></ProDescriptions>
+        {/*    setCurrentRow(res.data);*/}
+        {/*    if (res?.data) {*/}
+        {/*      return {*/}
+        {/*        data: res?.data || '',*/}
+        {/*        success: true,*/}
+        {/*        total: res.data,*/}
+        {/*      };*/}
+        {/*    } else {*/}
+        {/*      return {*/}
+        {/*        data: '',*/}
+        {/*        success: false,*/}
+        {/*        total: 0,*/}
+        {/*      };*/}
+        {/*    }*/}
+        {/*  }}*/}
+        {/*  emptyText={'空'}*/}
+        {/*  columns={[*/}
+        {/*    {*/}
+        {/*      title: 'AccessKey',*/}
+        {/*      dataIndex: 'accessKey',*/}
+        {/*      copyable: true,*/}
+        {/*    },*/}
+        {/*    {*/}
+        {/*      title: 'SecretKey',*/}
+        {/*      dataIndex: 'secretKey',*/}
+        {/*      copyable: true,*/}
+        {/*    },*/}
+        {/*  ]}*/}
+        {/*></ProDescriptions>*/}
       </ProCard>
       <ProCard title="开发者 SDK（快速调用接口）" type="inner" bordered>
         <Button type="primary" href={VAMAPI_CLIENT_SDK} target='_blank'>

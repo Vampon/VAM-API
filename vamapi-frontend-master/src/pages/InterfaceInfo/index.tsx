@@ -614,7 +614,7 @@ const ListOpenApiInfo: React.FC = () => {
 
       <Card>
         <p className="highlightLine">接口详细描述请前往开发者在线文档查看：</p>
-        <a href={`http://doc.vamapi.top/pages/${data?.id}/#${data?.name}`} target={"_blank"} rel="noreferrer">
+        <a href={`https://vampon.github.io/VAM-API-DOC/`} target={"_blank"} rel="noreferrer">
           {/*<a href={`132/pages/${data?.id}/#${data?.name}`} target={'_blank'} rel="noreferrer">*/}
           📘 接口在线文档：{data?.name}
         </a>

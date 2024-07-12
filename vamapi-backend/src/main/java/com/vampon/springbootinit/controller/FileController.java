@@ -9,6 +9,7 @@ import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.manager.CosManager;
 import com.vampon.springbootinit.model.dto.file.UploadFileRequest;
 import com.vampon.springbootinit.model.enums.FileUploadBizEnum;
+import com.vampon.springbootinit.service.FileService;
 import com.vampon.springbootinit.service.UserService;
 import java.io.File;
 import java.util.Arrays;
@@ -39,7 +40,7 @@ public class FileController {
     private UserService userService;
 
     @Resource
-    private CosManager cosManager;
+    private FileService fileService;
 
     /**
      * 文件上传
@@ -57,53 +58,13 @@ public class FileController {
         if (fileUploadBizEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        validFile(multipartFile, fileUploadBizEnum);
+        fileService.validFile(multipartFile, fileUploadBizEnum);
         User loginUser = userService.getLoginUser(request);
-        // 文件目录：根据业务、用户来划分
-        String uuid = RandomStringUtils.randomAlphanumeric(8);
-        String filename = uuid + "-" + multipartFile.getOriginalFilename();
-        String filepath = String.format("/%s/%s/%s", fileUploadBizEnum.getValue(), loginUser.getId(), filename);
-        File file = null;
-        try {
-            // 上传文件
-            file = File.createTempFile(filepath, null);
-            multipartFile.transferTo(file);
-            cosManager.putObject(filepath, file);
-            // 返回可访问地址
-            return ResultUtils.success(FileConstant.COS_HOST + filepath);
-        } catch (Exception e) {
-            log.error("file upload error, filepath = " + filepath, e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-        } finally {
-            if (file != null) {
-                // 删除临时文件
-                boolean delete = file.delete();
-                if (!delete) {
-                    log.error("file delete error, filepath = {}", filepath);
-                }
-            }
+        if(loginUser == null){
+             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
+        return ResultUtils.success(fileService.uploadFile(multipartFile, fileUploadBizEnum, loginUser));
     }
 
-    /**
-     * 校验文件
-     *
-     * @param multipartFile
-     * @param fileUploadBizEnum 业务类型
-     */
-    private void validFile(MultipartFile multipartFile, FileUploadBizEnum fileUploadBizEnum) {
-        // 文件大小
-        long fileSize = multipartFile.getSize();
-        // 文件后缀
-        String fileSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
-        final long ONE_M = 1024 * 1024L;
-        if (FileUploadBizEnum.USER_AVATAR.equals(fileUploadBizEnum)) {
-            if (fileSize > ONE_M) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过 1M");
-            }
-            if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp").contains(fileSuffix)) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件类型错误");
-            }
-        }
-    }
+
 }

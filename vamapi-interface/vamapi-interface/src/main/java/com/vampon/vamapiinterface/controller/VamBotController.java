@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.vampon.vamapicommon.common.BaseResponse;
+import com.vampon.vamapicommon.common.ErrorCode;
 import com.vampon.vamapicommon.common.ResultUtils;
 import com.vampon.vamapiinterface.model.Chat;
 import com.vampon.vamapiinterface.model.ChatResponse;
@@ -79,10 +80,41 @@ public class VamBotController {
     @GetMapping("/fortune_tellers")
     public static BaseResponse<String> fortuneTellers(String birthTime, String gender, String birthPlace,
                                                       String currentQuestion) throws IOException{
+        // 校验
+        if (birthTime == null || gender == null || birthPlace == null || currentQuestion == null) {
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "参数不能为空");
+        }
         // 构建消息体
         MediaType mediaType = MediaType.parse("application/json");
-        String prompt = "你将扮演一个算命大师，为我答疑解惑。我的出生时间是%s,性别是%s,出生地点是%s,当前关注的问题是%s,请你告诉我预测的结果。";
+        String prompt = "你将扮演一个算命大师，为我答疑解惑。我的出生时间是%s,性别是%s,出生地点是%s,当前关注的问题是%s,请你告诉我预测的结果。请注意，你的所有回答字数都应控制在100字以内";
         prompt = String.format(prompt, birthTime, gender, birthPlace, currentQuestion);
+        String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}],\"disable_search\":false,\"enable_citation\":false}";
+        RequestBody body = RequestBody.create(mediaType, requestBodyString);
+        // 构建请求
+        Request request = new Request.Builder()
+                .url("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token=" + getAccessToken())
+                .method("POST", body)
+                .addHeader("Content-Type", "application/json")
+                .build();
+        // 发送请求并处理响应
+        Response response = HTTP_CLIENT.newCall(request).execute();
+        if (response.isSuccessful()) {
+            String responseBodyString = response.body().string();
+            System.out.println(responseBodyString);
+            ChatResponse chatResponse = JSONUtil.toBean(responseBodyString, ChatResponse.class);
+            String chatResult = chatResponse.getResult();
+            return ResultUtils.success(chatResult);
+        } else {
+            // 处理请求失败的情况，例如重试请求或记录错误
+            return ResultUtils.error(50000, "请求失败");
+        }
+    }
+
+    @GetMapping("/joker_master")
+    public static BaseResponse<String> fortuneTellers() throws IOException{
+        // 构建消息体
+        MediaType mediaType = MediaType.parse("application/json");
+        String prompt = "你将扮演一位笑话大师，为我讲述各种令人捧腹的笑话。请你讲述一段笑话，请注意，你的所有回答字数都应控制在100字以内";
         String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}],\"disable_search\":false,\"enable_citation\":false}";
         RequestBody body = RequestBody.create(mediaType, requestBodyString);
         // 构建请求

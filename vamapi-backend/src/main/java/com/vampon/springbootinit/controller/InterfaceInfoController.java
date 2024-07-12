@@ -208,7 +208,7 @@ public class InterfaceInfoController {
         if (oldInterfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-        // todo:判断该接口是否可以调用
+        // todo:判断该接口是否可以调用，得在数据库中新增默认参数字段
 
         //修改接口数据库中的状态字段为1
         InterfaceInfo interfaceInfo = new InterfaceInfo();

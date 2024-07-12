@@ -7,8 +7,11 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.vampon.vamapicommon.common.ErrorCode;
 import com.vampon.vamapicommon.common.ResultUtils;
 import com.vampon.vamapicommon.common.BaseResponse;
+import com.vampon.vamapiinterface.model.Events;
+import com.vampon.vamapiinterface.model.WeatherInfo;
 import com.vampon.vamapiinterface.model.WeiboHot;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -58,10 +62,39 @@ public class FunApiController {
      * @return
      */
     @GetMapping("/weather")
-    public BaseResponse<String> getWeather(HttpServletRequest request) {
-        String url = "https://api.vvhan.com/api/weather";
+    public BaseResponse<String> getWeather(String adcode,HttpServletRequest request) {
+        // 访问高德查询天气接口
+        String url = "https://restapi.amap.com/v3/weather/weatherInfo?key=5bec0cbe2b14c4957857c197d5e0bc00&extensions=base&city=%s";
+        // todo: 校验adcode是否正确
+        url = String.format(url, adcode);
         String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
-        return invokeOuterApi(url, body);
+        HttpResponse httpResponse = HttpRequest.get(url + "?" + body).execute();
+        String responseJson = httpResponse.body();
+        System.out.println(responseJson);
+        // 解析 JSON
+        JSONObject jsonObject = JSONUtil.parseObj(responseJson);
+        String status = jsonObject.getStr("status");
+        if(!"1".equals(status)){
+            return ResultUtils.error(ErrorCode.SYSTEM_ERROR,"请求接口失败，请稍后再试");
+        }
+        JSONArray weatherArray = jsonObject.getJSONArray("lives");
+        if (weatherArray.size() > 0) {
+            JSONObject weatherObject = weatherArray.getJSONObject(0); // 获取数组中的第一个对象
+            JSONObject filteredObject = new JSONObject();
+            filteredObject.put("province", weatherObject.getStr("province"));
+            filteredObject.put("city", weatherObject.getStr("city"));
+            filteredObject.put("weather", weatherObject.getStr("weather"));
+            filteredObject.put("temperature", weatherObject.getStr("temperature"));
+            filteredObject.put("winddirection", weatherObject.getStr("winddirection"));
+            filteredObject.put("windpower", weatherObject.getStr("windpower"));
+            WeatherInfo weather = filteredObject.toBean(WeatherInfo.class);
+            String weatherResult = JSONUtil.toJsonStr(weather); // 注意这里可能需要一些处理来避免直接转换为JSON字符串
+            return ResultUtils.success(weatherResult);
+        } else {
+            // 没有天气数据，返回适当的错误或空响应
+            return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "没有找到天气数据");
+        }
+
     }
 
     /**
@@ -101,5 +134,33 @@ public class FunApiController {
 
         // 3.返回
         return ResultUtils.success(weiboHotResult);
+    }
+
+    @GetMapping("/eventsOnHistory")
+    public BaseResponse<String> getEventsOnHistory(String month, String day, HttpServletRequest request){
+        // 校验
+        List<String> monthMap = Arrays.asList("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12");
+        List<String> dayMap = Arrays.asList("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31");
+        if (!monthMap.contains(month) || !dayMap.contains(day)){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR,"日期格式错误，请输入正确的日期");
+        }
+        // 访问历史上的今天接口
+        String url = "https://baike.baidu.com/cms/home/eventsOnHistory/%s.json";
+        url = String.format(url, month);
+        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
+        HttpResponse httpResponse = HttpRequest.get(url + "?" + body).execute();
+        String responseJson = httpResponse.body();
+        // 解析 JSON
+        JSONObject jsonObject = JSONUtil.parseObj(responseJson);
+        JSONArray eventsArray = jsonObject.getJSONObject(month).getJSONArray(month+day);
+        JSONObject eventsObject = eventsArray.getJSONObject(0);
+        JSONObject filteredObject = new JSONObject();
+        filteredObject.put("date", month+day);
+        filteredObject.put("title", eventsObject.getStr("title"));
+        filteredObject.put("desc", eventsObject.getStr("desc"));
+        Events events = filteredObject.toBean(Events.class);
+        String eventsOnHistoryResult = JSONUtil.toJsonStr(events);
+        return ResultUtils.success(eventsOnHistoryResult);
+
     }
 }

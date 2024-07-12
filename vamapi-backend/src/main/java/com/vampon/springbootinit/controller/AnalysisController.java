@@ -7,8 +7,10 @@ import com.vampon.springbootinit.common.ErrorCode;
 import com.vampon.springbootinit.common.ResultUtils;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.mapper.UserInterfaceInfoMapper;
+import com.vampon.springbootinit.model.entity.UserInterfaceInfoLog;
 import com.vampon.springbootinit.model.vo.InterfaceInfoVO;
 import com.vampon.springbootinit.service.InterfaceInfoService;
+import com.vampon.springbootinit.service.InterfaceLogService;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.UserInterfaceInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,9 @@ public class AnalysisController {
     @Resource
     private InterfaceInfoService interfaceInfoService;
 
+    @Resource
+    private InterfaceLogService interfaceLogService;
+
     @GetMapping("/top/interface/invoke")
     @AuthCheck(mustRole = "admin")
     public BaseResponse<List<InterfaceInfoVO>> listTopInvokeInterfaceInfo() { //tips:再好好看看
@@ -61,4 +66,17 @@ public class AnalysisController {
         }).collect(Collectors.toList());
         return ResultUtils.success(interfaceInfoVOList);
     }
+
+    @GetMapping("/interface/statistics_info")
+    public BaseResponse<UserInterfaceInfoLog> getStatisticsInfo() {
+
+        UserInterfaceInfoLog userInterfaceInfoLog = new UserInterfaceInfoLog();
+        // 获取接口调用次数
+        // 获取最近1000个接口调用记录平均时间
+        Integer cost = interfaceLogService.getInterfaceInfoAverageCost();
+        userInterfaceInfoLog.setInterfaceInfoAverageRequestDuration(cost);
+        return ResultUtils.success(userInterfaceInfoLog);
+    }
+
+
 }
