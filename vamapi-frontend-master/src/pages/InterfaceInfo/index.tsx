@@ -216,20 +216,21 @@ const ListOpenApiInfo: React.FC = () => {
       setToolsInputPlaceholderValue(resPlaceholder);
       return;
     }
-
+    // 下面是提前预设好参数的逻辑，这里因为数据库存储的格式原因，就修改为不区分GET和POST了的逻辑了
     // GET
     if (method === interfaceMethodList.GET.text) {
-      // 获取url?以前的字符
-      resPlaceholder = url;
+      // 获取请求参数requestParams里的参数列表
       // 判断是否有参数
-      if (url.indexOf('?') !== -1) {
-        const urlBefore = url.substring(0, url.indexOf('?'));
-        // 获取参数
-        const params = getParams(url);
-        setExampleParams(params);
-
-        resPlaceholder = urlBefore;
+      resPlaceholder = url;
+      if (data?.requestParams === undefined || data?.requestParams === '') {
+        setToolsInputPlaceholderValue(resPlaceholder);
+        return;
       }
+      // @ts-ignore
+      const parsedData = JSON.parse(data?.requestParams);
+      // 获取json中的fildName字段并放到一个集合中
+      const params = parsedData.map((item) => ({ key: item.fieldName, value: '' }));
+      setExampleParams(params);
       setToolsInputPlaceholderValue(resPlaceholder);
       return;
     }
@@ -552,8 +553,8 @@ const ListOpenApiInfo: React.FC = () => {
         ? JSON.parse(res.data.responseParams)
         : ([] as API.RequestParamsField);
       const convertedParams = convertResponseParams(response);
-      setAxiosCode(axiosExample(res.data?.url, res.data?.method?.toLowerCase()));
-      setJavaCode(javaExample(res.data?.url, res.data?.method?.toUpperCase()));
+      setAxiosCode(axiosExample(res.data?.url.substring(res.data?.url.indexOf("/api")), res.data?.method?.toLowerCase()));
+      setJavaCode(javaExample(res.data?.method?.toUpperCase(), res.data?.url.substring(res.data?.url.indexOf("/api"))));
       setReturnCode(convertedParams);
     } catch (error: any) {
       message.error('请求失败，' + error.message);

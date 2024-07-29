@@ -1,7 +1,10 @@
 package com.vampon.springbootinit.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.vampon.springbootinit.model.entity.InterfaceInfoStatistics;
 import com.vampon.vamapicommon.model.entity.InterfaceLog;
+
+import java.util.List;
 
 /**
 * @author Fang Hao
@@ -19,6 +22,9 @@ public interface InterfaceLogMapper extends BaseMapper<InterfaceLog> {
      * @createDate: 2023-3-15
      */
     Integer getInterfaceInfoAverageCost();
+
+
+    List<InterfaceInfoStatistics> interfaceInvokeCountByDate();
 
 }
 

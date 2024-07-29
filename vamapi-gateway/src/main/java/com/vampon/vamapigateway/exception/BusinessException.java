@@ -1,4 +1,4 @@
-package com.vampon.exception;
+package com.vampon.vamapigateway.exception;
 
 
 import com.vampon.vamapicommon.common.ErrorCode;

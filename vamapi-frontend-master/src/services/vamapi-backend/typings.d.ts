@@ -5,6 +5,12 @@ declare namespace API {
     message?: string;
   };
 
+  type BaseResponseChart_ = {
+    code?: number;
+    data?: Chart;
+    message?: string;
+  };
+
   type BaseResponseInt_ = {
     code?: number;
     data?: number;
@@ -14,6 +20,12 @@ declare namespace API {
   type BaseResponseInterfaceInfo_ = {
     code?: number;
     data?: InterfaceInfo;
+    message?: string;
+  };
+
+  type BaseResponseListBiResponse_ = {
+    code?: number;
+    data?: BiResponse[];
     message?: string;
   };
 
@@ -68,6 +80,12 @@ declare namespace API {
   type BaseResponseOrderVo_ = {
     code?: number;
     data?: OrderVo;
+    message?: string;
+  };
+
+  type BaseResponsePageChart_ = {
+    code?: number;
+    data?: PageChart_;
     message?: string;
   };
 
@@ -161,6 +179,41 @@ declare namespace API {
     message?: string;
   };
 
+  type BiResponse = {
+    chartId?: number;
+    genChart?: string;
+    genResult?: string;
+    name?: string;
+  };
+
+  type Chart = {
+    chartData?: string;
+    chartType?: string;
+    createTime?: string;
+    execMessage?: string;
+    genChart?: string;
+    genResult?: string;
+    goal?: string;
+    id?: number;
+    isDelete?: number;
+    name?: string;
+    status?: string;
+    updateTime?: string;
+    userId?: number;
+  };
+
+  type ChartQueryRequest = {
+    chartType?: string;
+    current?: number;
+    goal?: string;
+    id?: number;
+    name?: string;
+    pageSize?: number;
+    sortField?: string;
+    sortOrder?: string;
+    userId?: number;
+  };
+
   type closedProductOrderUsingPOSTParams = {
     /** orderNo */
     orderNo?: string;
@@ -178,6 +231,11 @@ declare namespace API {
   type getCaptchaUsingGETParams = {
     /** emailAccount */
     emailAccount?: string;
+  };
+
+  type getChartByIdUsingGETParams = {
+    /** id */
+    id?: number;
   };
 
   type getInterfaceInfoByIdUsingGETParams = {
@@ -446,6 +504,19 @@ declare namespace API {
     optimizeJoinOfCountSql?: boolean;
     orders?: OrderItem[];
     records?: ProductOrderVo[];
+    searchCount?: boolean;
+    size?: number;
+    total?: number;
+  };
+
+  type PageChart_ = {
+    countId?: string;
+    current?: number;
+    maxLimit?: number;
+    optimizeCountSql?: boolean;
+    orders?: OrderItem[];
+    pages?: number;
+    records?: Chart[];
     searchCount?: boolean;
     size?: number;
     total?: number;

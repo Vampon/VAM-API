@@ -14,18 +14,17 @@ export const axiosExample = (url?: string, method?: string) =>
     .catch(error => {
       console.error('请求发生错误:', error);
     });`;
-export const javaExample = (url?: string, method?: string, id?: number, path?: string) =>
+export const javaExample = ( method?: string, path?: string) =>
 
   `    @Resource
     private VamApiClient vamApiClient;
 
     public void request() {
         try {
-            String url = "${url}";
             String method ="${method}";
             String path = "${path}";
             String requestParams = "你的请求参数,详细请前往开发者在线文档📘查看";
-            String invokeResult = vamApiClient.invokeInterface(${id}, requestParams, url, method, path);
+            String invokeResult = vamApiClient.invokeInterface(requestParams method, path);
             System.out.println(invokeResult);
         } catch (BusinessException e) {
             log.error(e.getMessage());

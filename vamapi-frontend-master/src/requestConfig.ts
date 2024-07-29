@@ -15,8 +15,7 @@ interface ResponseStructure {
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const requestConfig: RequestConfig = {
-  // todo:上线的话这里需要修改
-  baseURL: 'http://localhost:8101/',
+  baseURL: process.env.NODE_ENV === 'production' ? "http://vamapi.cloud/" : 'http://localhost:8101/',
   withCredentials: true,
   // 请求拦截器
   requestInterceptors: [

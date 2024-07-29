@@ -10,12 +10,18 @@ import cn.hutool.json.JSONUtil;
 import com.vampon.vamapicommon.common.ErrorCode;
 import com.vampon.vamapicommon.common.ResultUtils;
 import com.vampon.vamapicommon.common.BaseResponse;
+import com.vampon.vamapiinterface.model.Enum.CacheEnum;
 import com.vampon.vamapiinterface.model.Events;
+import com.vampon.vamapiinterface.model.TiktokHot;
 import com.vampon.vamapiinterface.model.WeatherInfo;
 import com.vampon.vamapiinterface.model.WeiboHot;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.cache.CacheManager;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -29,6 +35,9 @@ import java.util.List;
  */
 @RestController
 public class FunApiController {
+
+    @Autowired
+    private CacheManager cacheManager;
 
     private static BaseResponse<String> invokeOuterApi(String url, String body) {
         System.out.println((url + " " + body));
@@ -67,8 +76,7 @@ public class FunApiController {
         String url = "https://restapi.amap.com/v3/weather/weatherInfo?key=5bec0cbe2b14c4957857c197d5e0bc00&extensions=base&city=%s";
         // todo: 校验adcode是否正确
         url = String.format(url, adcode);
-        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
-        HttpResponse httpResponse = HttpRequest.get(url + "?" + body).execute();
+        HttpResponse httpResponse = HttpRequest.get(url).execute();
         String responseJson = httpResponse.body();
         System.out.println(responseJson);
         // 解析 JSON
@@ -101,8 +109,10 @@ public class FunApiController {
      * 获取微博热搜
      * @return 返回微博热搜
      */
+    @Cacheable(value = "WEIBO", key = "#root.methodName")
     @GetMapping("/weiboHotSearch")
     public BaseResponse<String> getWeiboHotSearch(HttpServletRequest request){
+        System.out.println("Executing getWeiboHotSearch method");
         // 1. 访问微博热搜接口
         String url = "https://weibo.com/ajax/side/hotSearch";
         String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
@@ -124,18 +134,18 @@ public class FunApiController {
             filteredObject.put("title", note);
             filteredObject.put("hotType", realtimeObject.getStr("label_name"));
             filteredObject.put("hotNum", realtimeObject.getStr("num"));
-            filteredObject.put("url", "https://s.weibo.com/weibo?q=%23"+ URLUtil.encode(note) +"%23");
+            // filteredObject.put("url", "https://s.weibo.com/weibo?q=%23"+ URLUtil.encode(note) +"%23");
             WeiboHot weiboHot = filteredObject.toBean(WeiboHot.class);
             weiboHotList.add(weiboHot);
         }
 //        WeiboHotSearchResponse weiboHotSearchResponse = new WeiboHotSearchResponse();
 //        weiboHotSearchResponse.setWeibohotSearch(weiboHotList);
         String weiboHotResult = JSONUtil.toJsonStr(weiboHotList);
-
         // 3.返回
         return ResultUtils.success(weiboHotResult);
     }
 
+    @Cacheable(value = "EVENTONHISTORY", key = "#month + '_' + #day")
     @GetMapping("/eventsOnHistory")
     public BaseResponse<String> getEventsOnHistory(String month, String day, HttpServletRequest request){
         // 校验
@@ -144,6 +154,7 @@ public class FunApiController {
         if (!monthMap.contains(month) || !dayMap.contains(day)){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR,"日期格式错误，请输入正确的日期");
         }
+        System.out.println("Executing getEventsOnHistory method");
         // 访问历史上的今天接口
         String url = "https://baike.baidu.com/cms/home/eventsOnHistory/%s.json";
         url = String.format(url, month);
@@ -156,11 +167,40 @@ public class FunApiController {
         JSONObject eventsObject = eventsArray.getJSONObject(0);
         JSONObject filteredObject = new JSONObject();
         filteredObject.put("date", month+day);
-        filteredObject.put("title", eventsObject.getStr("title"));
-        filteredObject.put("desc", eventsObject.getStr("desc"));
+        // 去除 HTML 标签
+        String cleanText = eventsObject.getStr("desc").replaceAll("<[^>]*>", "");
+        // 去除多余的转义字符
+        cleanText = cleanText.replaceAll("\\\\\"", "\"");
+        filteredObject.put("desc", cleanText);
         Events events = filteredObject.toBean(Events.class);
         String eventsOnHistoryResult = JSONUtil.toJsonStr(events);
         return ResultUtils.success(eventsOnHistoryResult);
+    }
 
+    /**
+     * 获取抖音热榜
+     * @return 返回抖音热榜
+     */
+    @Cacheable(value = "TIKTOK", key = "#root.methodName")
+    @GetMapping("/tiktokHotSearch")
+    public BaseResponse<String> getTiktokHotSearch(HttpServletRequest request){
+        System.out.println("Executing getTiktokHotSearch method");
+        // 访问抖音热榜接口
+        String url = "https://apis.tianapi.com/douyinhot/index?key=0496aa3de7ffb29ef40a2b3d51319077";
+        String body = URLUtil.decode(request.getHeader("body"), CharsetUtil.CHARSET_UTF_8);
+        HttpResponse httpResponse = HttpRequest.get(url).execute();
+        String responseJson = httpResponse.body();
+        // 解析 JSON
+        JSONObject jsonObject = JSONUtil.parseObj(responseJson);
+        JSONArray tiktokArray = jsonObject.getJSONObject("result").getJSONArray("list");
+        List<TiktokHot> tiktokHotList = new ArrayList<>();
+        for (int i = 0; i < tiktokArray.size(); i++) {
+            JSONObject tiktokObject = tiktokArray.getJSONObject(i); // 获取数组中的第一个对象
+            TiktokHot tiktokHot = tiktokObject.toBean(TiktokHot.class);
+            tiktokHotList.add(tiktokHot);
+        }
+        String tiktokHotResult = JSONUtil.toJsonStr(tiktokHotList);
+        // 返回
+        return ResultUtils.success(tiktokHotResult);
     }
 }

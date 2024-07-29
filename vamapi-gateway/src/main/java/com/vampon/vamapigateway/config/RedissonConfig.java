@@ -1,4 +1,4 @@
-package com.vampon.config;
+package com.vampon.vamapigateway.config;
 import lombok.Data;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;

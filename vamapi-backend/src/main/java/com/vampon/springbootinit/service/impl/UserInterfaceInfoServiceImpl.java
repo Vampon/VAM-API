@@ -75,7 +75,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         if(query == null){
             return 0;
         }
-        return query.getLeftNum();
+        return 1;
     }
 
     @Override
@@ -85,7 +85,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         }
         // todo:下面的这些逻辑是不是应该需要事务，不然万一哪一步出错了，更新的消息都需要回滚
         boolean invoked = invokeCount(interfaceInfoId, userId);
-        if(!invoked){
+        if(!invoked) {
             return false;
         }
         // 查询接口信息中的扣减积分数

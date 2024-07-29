@@ -9,9 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.vampon.springbootinit.common.BaseResponse;
 import com.vampon.springbootinit.common.ErrorCode;
-import com.vampon.springbootinit.constant.CommonConstant;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.exception.ThrowUtils;
 import com.vampon.springbootinit.mapper.InterfaceInfoMapper;
@@ -24,7 +22,6 @@ import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.util.StringUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -51,9 +48,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
     implements InterfaceInfoService {
     @Resource
     private UserService userService;
-
-    @Resource
-    private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -134,14 +128,15 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                     .collect(Collectors.toList());
             page.setRecords(pagedInterfaces);
             page.setTotal(allInterfacesInRedis.size());
-            // System.out.println("缓存命中");
             log.info("分页缓存命中");
             return page;
         }
-        // System.out.println("缓存未命中");
         log.info("分页缓存未命中");
         // 未命中,查询数据库
-        List<InterfaceInfo> allInterfaceInfoList = list();
+        // 构建查询条件和排序条件
+        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.orderByDesc("totalInvokes");  // 按照 createTime 字段升序排序
+        List<InterfaceInfo> allInterfaceInfoList = list(queryWrapper);
         page.setRecords(allInterfaceInfoList);
         page.setTotal(allInterfaceInfoList.size());
         //存储数据到redis中
@@ -149,16 +144,14 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
             // 将 InterfaceInfo 转为 JSON 字符串
             String json = convertInterfaceInfoToJSON(interfaceInfo);
 
-            // 添加到 Redis 的 ZSet 中，使用默认的 score（即按照插入顺序）
-            // todo:score换成调用次数
-            stringRedisTemplate.opsForZSet().add(CACHE_INTERFACEINFO_ALL_KEY, json,interfaceInfo.getId());
+            // 添加到 Redis 的 ZSet 中，使用默认的 score（即调用总次数）
+            stringRedisTemplate.opsForZSet().add(CACHE_INTERFACEINFO_ALL_KEY, json,interfaceInfo.getTotalInvokes());
 
         }
         // 设置过期时间，用来作为如果出现缓存不一致现象的兜底方案
-        stringRedisTemplate.expire(CACHE_INTERFACEINFO_ALL_KEY,CACHE_INTERFACEINFO_ALL_TTL,TimeUnit.MINUTES);
+        stringRedisTemplate.expire(CACHE_INTERFACEINFO_ALL_KEY,CACHE_INTERFACEINFO_ALL_TTL,TimeUnit.SECONDS);
         return page;
 
-        //todo: queryWrapper需要再看看
 //        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>(interfaceInfoQuery);
 //        queryWrapper.like(StringUtils.isNotBlank(description), "description", description);
 //        queryWrapper.orderBy(StringUtils.isNotBlank(sortField),
@@ -186,42 +179,52 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         VamApiClient vamApiClient = new VamApiClient(accessKey, secretKey);
         // todo:设置网关地址，使用配置类，直接注入新网关地址，避免魔法值，方便上线
         // vamApiClient.setGateway_Host(gatewayConfig.getHost());
-        //log.info("generate sdk {} done ",reApiClient);
-        System.out.println("请求参数：" + requestParams);
+        // log.info("generate sdk {} done ",reApiClient);
         String invokeResult=null;
         try {
             // 执行方法
-            invokeResult = vamApiClient.invokeInterface(id,requestParams, url, method,path);
+            invokeResult = vamApiClient.invokeInterface(requestParams, method, path);
         } catch (Exception e) {
             // 调用失败，开子线程使用默认参数确认接口是否可用
-            //tryAgainUsingOriginalParam(oldInterfaceInfo, id, url, method, path, requestParams, reApiClient);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口调用失败");
+            //tryAgainUsingOriginalParam(oldInterfaceInfo, id, url, method, path, requestParams, vamApiClient);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口调用失败");
         }
         // 走到下面，接口肯定调用成功了
         // 如果调用出现了接口内部异常或者路径错误，需要下线接口（网关已经将异常结果统一处理了）
         if (StrUtil.isBlank(invokeResult)) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口返回值为空");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口返回值为空");
         }
         else{
             JSONObject jsonObject;
             try {
                 jsonObject = JSONUtil.parseObj(invokeResult);
             }catch (Exception e){
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口响应参数不规范");//JSON转化失败，响应数据不是JSON格式
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口响应参数不规范");//JSON转化失败，响应数据不是JSON格式
             }
-            int code =(int) Optional.ofNullable(jsonObject.get("code")).orElse("-1");//要求接口返回必须是统一响应格式
+            int code;
+            String msg;
+            try {
+                code =(int) Optional.ofNullable(jsonObject.get("code")).orElse("-1");//要求接口返回必须是统一响应格式
+                msg = (String) Optional.ofNullable(jsonObject.get("message")).orElse("无");
+            }catch (Exception e){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口响应参数不规范");
+            }
             ThrowUtils.throwIf(code==-1,ErrorCode.SYSTEM_ERROR,"接口响应参数不规范");//响应参数里不包含code
 
-            if(code==ErrorCode.SYSTEM_ERROR.getCode()){
+            if (code==ErrorCode.SYSTEM_ERROR.getCode()){
 //                offlineInterface(id);
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口异常，即将关闭接口");
             }
-            else if(code==ErrorCode.NOT_FOUND_ERROR.getCode()){
-                throw new BusinessException(ErrorCode.PARAMS_ERROR,"接口路径不存在");
+            else if (code==ErrorCode.NOT_FOUND_ERROR.getCode()){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口路径不存在: %s".format(msg));
             }
             // 请求参数错误
-            else if(code==ErrorCode.PARAMS_ERROR.getCode()){
-                throw new BusinessException((ErrorCode.PARAMS_ERROR));
+            else if (code==ErrorCode.PARAMS_ERROR.getCode()){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, String.format("请求参数错误: %s", msg));
+            } else if (code==ErrorCode.OPERATION_ERROR.getCode()) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, String.format("操作失败: %s", msg));
+            } else if (code==ErrorCode.FORBIDDEN_ERROR.getCode()){
+                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, String.format("限制访问: %s", msg));
             }
             return invokeResult;
         }
@@ -238,6 +241,11 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
     public void deleteRedisCache(Long id){
         stringRedisTemplate.delete(CACHE_INTERFACEINFO_ALL_KEY);
         stringRedisTemplate.delete(CACHE_INTERFACEINFO_KEY + id);
+    }
+
+    @Override
+    public void deleteAllRedisCache(){
+        stringRedisTemplate.delete(CACHE_INTERFACEINFO_ALL_KEY);
     }
 
     @Override

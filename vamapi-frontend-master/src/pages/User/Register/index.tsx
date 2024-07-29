@@ -71,9 +71,9 @@ const Register: React.FC = () => {
               submitText:"注册"
             }
           }}
-          logo={<img alt="logo" src="/logo.svg" />}
+          logo={<img alt="logo" src="/logo.svg" style={{width: '56px', height: 'auto'}}/>}
           title="VAM在线接口"
-          subTitle={'API 开放平台'}
+          subTitle={'面向开发者的 API 开放平台'}
           initialValues={{
             autoLogin: true,
           }}

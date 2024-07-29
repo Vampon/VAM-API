@@ -11,10 +11,13 @@ import com.vampon.springbootinit.constant.UserConstant;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.exception.ThrowUtils;
 import com.vampon.springbootinit.mapper.UserVoucherurlInfoMapper;
+import com.vampon.springbootinit.model.dto.chart.GenChartByAiRequest;
 import com.vampon.springbootinit.model.dto.user.*;
 import com.vampon.springbootinit.model.entity.UserVoucherurlInfo;
+import com.vampon.springbootinit.model.vo.BiResponse;
 import com.vampon.springbootinit.model.vo.LoginUserVO;
 import com.vampon.springbootinit.model.vo.UserVO;
+import com.vampon.springbootinit.service.ChartService;
 import com.vampon.springbootinit.service.UserService;
 
 import java.util.List;
@@ -69,6 +72,9 @@ public class UserController {
     private JavaMailSender mailSender;
     @Resource
     private UserVoucherurlInfoService userVoucherurlInfoService;
+
+
+
 
 
     // region 登录相关
@@ -497,5 +503,6 @@ public class UserController {
         boolean updated = userVoucherurlInfoService.update(userVoucherurlInfo, userVoucherurlInfoLambdaUpdateWrapper);
         return ResultUtils.success(userVoucherurlInfo.getVoucherUrl());
     }
+
 
 }

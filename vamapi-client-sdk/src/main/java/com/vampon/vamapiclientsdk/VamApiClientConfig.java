@@ -8,7 +8,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties("vamapi.client") //tips:这个的作用？
+@ConfigurationProperties("vamapi.client")
 @Data
 //@ComponentScan
 public class VamApiClientConfig {

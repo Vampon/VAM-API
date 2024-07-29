@@ -28,4 +28,12 @@
         userName,userAvatar,userProfile,
         userRole,balance,invitationCode,createTime,updateTime,isDelete,userEmail
     </sql>
+
+    <select id="userCountByDate" resultType="com.vampon.springbootinit.model.entity.UserStatistics">
+        SELECT DATE(createTime) AS createDate, COUNT(*) AS userCount
+        FROM user
+        WHERE createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(createTime)
+        ORDER BY createDate;
+    </select>
 </mapper>

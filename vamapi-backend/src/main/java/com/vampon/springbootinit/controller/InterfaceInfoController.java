@@ -2,24 +2,20 @@ package com.vampon.springbootinit.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.gson.Gson;
+import com.vampon.springbootinit.annotation.AuthCheck;
 import com.vampon.springbootinit.common.*;
 import com.vampon.springbootinit.constant.CommonConstant;
-import com.vampon.springbootinit.annotation.AuthCheck;
 import com.vampon.springbootinit.exception.BusinessException;
-import com.vampon.springbootinit.model.client.TestUser;
 import com.vampon.springbootinit.model.dto.interfaceinfo.*;
 import com.vampon.springbootinit.model.enums.InterfaceInfoStatusEnum;
 import com.vampon.springbootinit.service.InterfaceInfoService;
 import com.vampon.springbootinit.service.UserService;
-import com.vampon.springbootinit.utils.VamApiClient;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -69,10 +65,7 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         long newInterfaceInfoId = interfaceInfo.getId();
-        // todo: 存入缓存
-//        cacheClient.set(CACHE_INTERFACEINFO_KEY + newInterfaceInfoId, interfaceInfo, CACHE_INTERFACEINFO_TTL, TimeUnit.MINUTES);
-//        stringRedisTemplate.opsForZSet().add(CACHE_INTERFACEINFO_ALL_KEY, JSON.toJSONString(interfaceInfo), CACHE_INTERFACEINFO_ALL_TTL);
-//        stringRedisTemplate.expire(CACHE_INTERFACEINFO_ALL_KEY, CACHE_INTERFACEINFO_ALL_TTL, TimeUnit.MINUTES);
+        interfaceInfoService.deleteAllRedisCache();
         return ResultUtils.success(newInterfaceInfoId);
     }
 

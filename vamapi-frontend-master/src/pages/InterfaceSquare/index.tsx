@@ -27,7 +27,7 @@ const InterfaceSquare: React.FC = () => {
   const [statisticsData, setstatisticsData] = useState<API.UserInterfaceInfoLog>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [responsive, setResponsive] = useState(false);
-  const [visitCount, setVisitCount] = useState(1523);
+  const [visitCount, setVisitCount] = useState(2523);
   const loadData = async (current = 1) => {
     setLoading(true)
     const res = await listInterfaceInfoByPageUsingGet({
@@ -72,8 +72,8 @@ const InterfaceSquare: React.FC = () => {
       setVisitCount(newCount);
     } else {
       // 如果 localStorage 中没有计数，则初始化为 1
-      localStorage.setItem('visitCount', 1523);
-      setVisitCount(1523);
+      localStorage.setItem('visitCount', 2523);
+      setVisitCount(2523);
     }
   }
 

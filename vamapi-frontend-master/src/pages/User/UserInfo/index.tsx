@@ -6,11 +6,14 @@ import {
   getUserVoucherUsingGet,
 
 } from '@/services/vamapi-backend/userController';
+import {doDailyCheckInUsingPost} from "@/services/vamapi-backend/dailyCheckInController";
 import {values} from 'lodash';
-import {Button, message, DownloadOutlined, Card, Descriptions} from 'antd';
+import {Button, message, Tooltip, Card, Descriptions} from 'antd';
 import {useState} from 'react';
 import {VAMAPI_CLIENT_SDK} from "@/constants";
 import { Image } from 'antd';
+import Settings from "../../../../config/defaultSettings";
+import {useModel} from "@umijs/max";
 
 
 export const valueLength = (val: any) => {
@@ -24,6 +27,8 @@ export const valueLength = (val: any) => {
 const UserInfo: React.FC = () => {
   const [currentRow, setCurrentRow] = useState<API.UserVO>();
   const [reloadFlag, setReloadFlag] = useState(false);
+  const [dailyCheckInLoading, setDailyCheckInLoading] = useState<boolean>(false);
+  const {initialState, setInitialState} = useModel('@@initialState');
 
 
   /**
@@ -148,6 +153,29 @@ const UserInfo: React.FC = () => {
             },
           ]}
         ></ProDescriptions>
+        <Button loading={dailyCheckInLoading}
+                style={{marginRight: 10}} type={"primary"} onClick={async () => {
+          setDailyCheckInLoading(true)
+          const res = await doDailyCheckInUsingPost()
+          if (res.data && res.code === 0) {
+            const res = await getLoginUserUsingGet();
+            if (res.data && res.code === 0) {
+              message.success("签到成功")
+              setInitialState({loginUser: res.data, settings: Settings})
+            }
+          }
+          setTimeout(() => {
+            setDailyCheckInLoading(false)
+          }, 1000)
+        }}>
+          <Tooltip title={<>
+            <p>每日签到可获取10积分</p>
+            {/*<p>普通用户上限100</p>*/}
+            {/*<p>VPI会员上限1000</p>*/}
+          </>}>
+            每日签到
+          </Tooltip>
+        </Button>
       </ProCard>
       <ProCard
         title="用户凭证"

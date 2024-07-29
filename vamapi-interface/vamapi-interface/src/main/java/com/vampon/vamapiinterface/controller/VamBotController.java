@@ -25,10 +25,14 @@ public class VamBotController {
 
     @PostMapping("/vam_bot")
     public static BaseResponse<String> chatWithBot(@org.springframework.web.bind.annotation.RequestBody Chat chat) throws IOException{
-        log.info("RequestBody:" + chat);
+        if(chat.getPrompt().length()>100){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "参数过长");
+        }
         // 构建消息体
         MediaType mediaType = MediaType.parse("application/json");
-        String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + chat.getPrompt() + "\"}],\"disable_search\":false,\"enable_citation\":false}";
+        String prompt = "你是一个无所不知的智能机器人，为我答疑解惑。我的问题是%s。请注意，你的所有回答字数都应控制在200字以内";
+        prompt = String.format(prompt, chat.getPrompt());
+        String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}],\"disable_search\":false,\"enable_citation\":false}";
         RequestBody body = RequestBody.create(mediaType, requestBodyString);
         // 构建请求
         Request request = new Request.Builder()
@@ -84,6 +88,9 @@ public class VamBotController {
         if (birthTime == null || gender == null || birthPlace == null || currentQuestion == null) {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "参数不能为空");
         }
+        if ( birthTime.length() > 50 || birthPlace.length() > 50 || currentQuestion.length() > 50){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR, "参数过长");
+        }
         // 构建消息体
         MediaType mediaType = MediaType.parse("application/json");
         String prompt = "你将扮演一个算命大师，为我答疑解惑。我的出生时间是%s,性别是%s,出生地点是%s,当前关注的问题是%s,请你告诉我预测的结果。请注意，你的所有回答字数都应控制在100字以内";
@@ -115,6 +122,34 @@ public class VamBotController {
         // 构建消息体
         MediaType mediaType = MediaType.parse("application/json");
         String prompt = "你将扮演一位笑话大师，为我讲述各种令人捧腹的笑话。请你讲述一段笑话，请注意，你的所有回答字数都应控制在100字以内";
+        String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}],\"disable_search\":false,\"enable_citation\":false}";
+        RequestBody body = RequestBody.create(mediaType, requestBodyString);
+        // 构建请求
+        Request request = new Request.Builder()
+                .url("https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token=" + getAccessToken())
+                .method("POST", body)
+                .addHeader("Content-Type", "application/json")
+                .build();
+        // 发送请求并处理响应
+        Response response = HTTP_CLIENT.newCall(request).execute();
+        if (response.isSuccessful()) {
+            String responseBodyString = response.body().string();
+            System.out.println(responseBodyString);
+            ChatResponse chatResponse = JSONUtil.toBean(responseBodyString, ChatResponse.class);
+            String chatResult = chatResponse.getResult();
+            return ResultUtils.success(chatResult);
+        } else {
+            // 处理请求失败的情况，例如重试请求或记录错误
+            return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "请求失败");
+
+        }
+    }
+
+    @GetMapping("/talk_rubbish")
+    public static BaseResponse<String> talkRubbish() throws IOException{
+        // 构建消息体
+        MediaType mediaType = MediaType.parse("application/json");
+        String prompt = "你将扮演一位抽象大师，说出一段离谱至极的胡言乱语，可以针对任何事件任何人物任何观点，请注意，你的所有回答字数都应控制在100字以内";
         String requestBodyString = "{\"messages\":[{\"role\":\"user\",\"content\":\"" + prompt + "\"}],\"disable_search\":false,\"enable_citation\":false}";
         RequestBody body = RequestBody.create(mediaType, requestBodyString);
         // 构建请求

@@ -1,8 +1,11 @@
 package com.vampon.springbootinit.service;
 
 import javax.annotation.Resource;
+
+import com.vampon.springbootinit.mapper.UserMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
@@ -14,6 +17,9 @@ public class UserServiceTest {
 
     @Resource
     private UserService userService;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Test
     void userRegister() {
@@ -29,5 +35,9 @@ public class UserServiceTest {
         } catch (Exception e) {
 
         }
+    }
+    @Test
+    void userData(){
+        userMapper.userCountByDate();
     }
 }

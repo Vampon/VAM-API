@@ -9,6 +9,6 @@ export const SYSTEM_LOGO = "https://pic.imgdb.cn/item/65e0254b9f345e8d036d1fcf.j
 export const GITHUB_LINK = "https://github.com/vampon/vamapi-backend"
 
 // todo:上线之后域名更换
-export const VAMAPI_CLIENT_SDK = "https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/SDK/vamapi-client-sdk.zip"
+export const VAMAPI_CLIENT_SDK = "https://vamapi-1301005258.cos.ap-beijing.myqcloud.com/SDK/vamapi-client-sdk-0.0.1.jar"
 
 

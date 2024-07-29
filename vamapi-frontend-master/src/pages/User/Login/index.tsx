@@ -28,39 +28,43 @@ const LoginMessage: React.FC<{
     />
   );
 };
+
 const Login: React.FC = () => {
-  const [userLoginState] = useState<API.LoginResult>({});
+  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { setInitialState } = useModel('@@initialState');
+
   const handleSubmit = async (values: API.UserLoginRequest) => {
     try {
       // 登录
-      const res = await userLoginUsingPost({
-        ...values,
-      });
+      const res = await userLoginUsingPost({ ...values });
       if (res.data) {
-        const urlParams = new URL(window.location.href).searchParams;
-        history.push(urlParams.get('redirect') || '/');
         setInitialState({
-          loginUser: res.data
+          loginUser: res.data,
         });
-        return;
+        message.success('登录成功！');
+        const urlParams = new URL(window.location.href).searchParams;
+        const redirect = urlParams.get('redirect') || '/';
+        history.push(redirect);
+      } else {
+        throw new Error('登录失败，请重试！');
       }
     } catch (error) {
       const defaultLoginFailureMessage = '登录失败，请重试！';
-      console.log(error);
+      console.error(error);
       message.error(defaultLoginFailureMessage);
     }
   };
+
   const { status, type: loginType } = userLoginState;
-  // @ts-ignore
+
   return (
     <div className={styles.container}>
       <div className={styles.content}>
         <LoginForm
-          logo={<img alt="logo" src="/logo.svg" />}
+          logo={<img alt="logo" src="/logo.svg" style={{ width: '56px', height: 'auto' }} />}
           title="VAM在线接口"
-          subTitle={'API 开放平台'}
+          subTitle={'面向开发者的 API 开放平台'}
           initialValues={{
             autoLogin: true,
           }}
@@ -131,15 +135,14 @@ const Login: React.FC = () => {
               }}
               href={"/user/register"}
             >
-                新用户注册
+              新用户注册
             </a>
-
           </div>
         </LoginForm>
       </div>
       <Footer />
     </div>
-
   );
 };
+
 export default Login;

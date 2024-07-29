@@ -8,6 +8,8 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
 import com.vampon.springbootinit.model.client.TestUser;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,137 +18,87 @@ import static com.vampon.springbootinit.utils.SignUtils.getSign;
 
 /**
  * 调用第三方接口的客户端
+ * 一些校验尽可能放在客户端，不要等发送到网关再进行校验，减少压力
  */
 @Slf4j
 public class VamApiClient {
-    // todo:将魔法值修改了
-    private static String GATEWAY_HOST = "http://localhost:8090";
-    private String accessKey;
-    private String secretKey;
+    private static final String DEFAULT_GATEWAY_HOST = "http://localhost:8090";
+    private String gatewayHost;
+    private final String accessKey;
+    private final String secretKey;
 
     public VamApiClient(String accessKey, String secretKey) {
-        this.accessKey = accessKey;
-        this.secretKey = secretKey;
+        this(accessKey, secretKey, DEFAULT_GATEWAY_HOST);
     }
 
-    public void setGateway_Host(String gatewayHost) {
-        GATEWAY_HOST = gatewayHost;
+    public VamApiClient(String accessKey, String secretKey, String gatewayHost) {
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+        this.gatewayHost = gatewayHost;
+    }
+
+    public void setGatewayHost(String gatewayHost) {
+        this.gatewayHost = gatewayHost;
     }
 
     private Map<String, String> getHeaderMap(String body){
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("accessKey",accessKey);
-        //密钥一般不能在服务器间进行传输，会被拦截重放，不安全
-        // hashMap.put("secretKey",secretKey);
         hashMap.put("nonce", RandomUtil.randomNumbers(4));
-        // todo 此处因为涉及到中文参数的时候，就会出现不一致的现象，这里先把请求体去掉，后续再找解决办法
-        // hashMap.put("body",body);
         hashMap.put("timestamp",String.valueOf(System.currentTimeMillis() / 1000));
         hashMap.put("sign",getSign(hashMap, secretKey));
         return hashMap;
     }
 
+
     /**
      * 支持调用任意接口，把请求导向网关
      * @param params 接口参数
-     * @param url 接口地址
      * @param method 接口使用方法
      * @return 接口调用结果
      */
-    public String invokeInterface(long id, String params, String url, String method, String path) {
+    public String invokeInterface(String params, String method, String path) {
+        log.info("请求参数：" + params);
+        log.info("请求方法：" + method);
+        log.info("请求路径：" + path);
+        if (ObjectUtils.isEmpty(method)) {
+            throw new IllegalArgumentException("请填写请求方法");
+        }
+        if (StringUtils.isBlank(path)) {
+            throw new IllegalArgumentException("请填写请求路径");
+        }
+        // 匹配 /api/ 开头的路径
+        if (!path.matches("^/api/.*")){
+            throw new IllegalArgumentException("路径格式不正确: " + path);
+        }
+        method = method.trim().toUpperCase();
+        log.info("SDK正在转发至GATEWAY_HOST:{}", gatewayHost);
         String result;
-        log.info("SDK正在转发至GATEWAY_HOST:{}", GATEWAY_HOST);
-        try {
-            HttpRequest httpRequest;
-            if ("GET".equalsIgnoreCase(method)) {
-                httpRequest = HttpRequest.get(GATEWAY_HOST + path);
-            } else if ("POST".equalsIgnoreCase(method)) {
-                httpRequest = HttpRequest.post(GATEWAY_HOST + path);
-            } else {
-                throw new IllegalArgumentException("Unsupported HTTP method: " + method);
-            }
-
-            HttpResponse httpResponse = httpRequest
-                    // 处理中文编码
+        HttpRequest request;
+        if ("GET".equalsIgnoreCase(method)) {
+            String fullUrl = gatewayHost + path + "?" + params;
+            request = HttpRequest.get(fullUrl)
+                    .header("Accept-Charset", CharsetUtil.UTF_8)
+                    .addHeaders(getHeaderMap(params));
+        } else if ("POST".equalsIgnoreCase(method)) {
+            request = HttpRequest.post(gatewayHost + path)
                     .header("Accept-Charset", CharsetUtil.UTF_8)
                     .addHeaders(getHeaderMap(params))
-                    .body(params)
-                    .execute();
+                    .body(params);
+        } else {
+            throw new IllegalArgumentException("不支持的请求方法: " + method);
+        }
 
+        try (HttpResponse httpResponse = request.execute()) {
             String body = httpResponse.body();
-            // 将返回的JSON结果格式化，其实就是加换行符
             result = JSONUtil.formatJsonStr(body);
         } catch (Exception e) {
-            log.error("HTTP请求错误", e);
-            // 在这里可以根据实际需求处理异常情况
-            result = "{\"error\": \"HTTP请求错误\"}";
+            log.error("SDK调用接口失败：{}", e.getMessage(), e);
+            result = "{\"code\": 500, \"msg\": \"接口调用失败\", \"data\": \"null\"}";
         }
 
         log.info("SDK调用接口完成，响应数据：{}", result);
         return result;
     }
-
-//    public String invokeInterface(long id,String params, String url, String method,String path)  {
-//        String result;
-//        log.info("SDK正在转发至GATEWAY_HOST:{}",GATEWAY_HOST);
-//        try(
-//                HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + path)
-//                        // 处理中文编码
-//                        .header("Accept-Charset", CharsetUtil.UTF_8)
-//                        .addHeaders(getHeaderMap(params))
-//                        .body(params)
-//                        .execute())
-//        {
-//            String body = httpResponse.body();
-//            /*
-//            // 可以在SDK处理接口404的情况
-//            if(httpResponse.getStatus()==404){
-//                body = String.format("{\"code\": %d,\"msg\":\"%s\",\"data\":\"%s\"}",
-//                        httpResponse.getStatus(), "接口请求路径不存在", "null");
-//                log.info("响应结果：" + body);
-//            }
-//            */
-//            // 将返回的JSON结果格式化，其实就是加换行符
-//            result=JSONUtil.formatJsonStr(body);
-//        }
-//        log.info("SDK调用接口完成，响应数据：{}",result);
-//        return result;
-//    }
-
-//    public String getNameByGet(String name)
-//    {
-//        //可以单独传入http参数，这样参数会自动做URL编码，拼接在URL中
-//        HashMap<String, Object> paramMap = new HashMap<>();
-//        paramMap.put("name", name);
-//
-//        String result= HttpUtil.get("http://localhost:8090/api/name", paramMap);
-//        System.out.println(result);
-//        return result;
-//    }
-//
-//
-//    public String getnameByPost(String name)
-//    {
-//        HashMap<String, Object> paramMap = new HashMap<>();
-//        paramMap.put("name", name);
-//
-//        String result= HttpUtil.post("http://localhost:8090/api/name", paramMap);
-//        System.out.println(result);
-//        return result;
-//    }
-
-
-
-//    public String getUsernameByPost(TestUser user)
-//    {
-//        String json = JSONUtil.toJsonStr(user);
-//        String url = "http://localhost:8090/api/username";
-//        String result = HttpRequest.post(url)
-//                .addHeaders(getHeaderMap(json))
-//                .body(json)
-//                .execute().body(); // tip:这个再仔细查查
-//        System.out.println(result);
-//        return result;
-//    }
 
 }

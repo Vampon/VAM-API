@@ -32,4 +32,12 @@
     <select id="getInterfaceInfoAverageCost" resultType="java.lang.Integer">
         select round(avg(requestDuration),0) as totalInvokesAvg from interface_log order by updateTime desc limit 1000
     </select>
+
+    <select id="interfaceInvokeCountByDate" resultType="com.vampon.springbootinit.model.entity.InterfaceInfoStatistics">
+        SELECT DATE(createTime) AS createDate, COUNT(*) AS invokeCount, AVG(requestDuration) as duration
+        FROM interface_log
+        WHERE createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(createTime)
+        ORDER BY createDate;
+    </select>
 </mapper>

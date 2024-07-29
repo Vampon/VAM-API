@@ -1,7 +1,11 @@
 package com.vampon.springbootinit.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.vampon.springbootinit.model.entity.InterfaceInfoStatistics;
+import com.vampon.springbootinit.model.entity.UserStatistics;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
+
+import java.util.List;
 
 /**
 * @author Fang Hao

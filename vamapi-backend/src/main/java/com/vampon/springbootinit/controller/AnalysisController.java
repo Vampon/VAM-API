@@ -7,8 +7,12 @@ import com.vampon.springbootinit.common.ErrorCode;
 import com.vampon.springbootinit.common.ResultUtils;
 import com.vampon.springbootinit.exception.BusinessException;
 import com.vampon.springbootinit.mapper.UserInterfaceInfoMapper;
+import com.vampon.springbootinit.model.dto.chart.GenChartByAiRequest;
+import com.vampon.springbootinit.model.entity.Chart;
 import com.vampon.springbootinit.model.entity.UserInterfaceInfoLog;
+import com.vampon.springbootinit.model.vo.BiResponse;
 import com.vampon.springbootinit.model.vo.InterfaceInfoVO;
+import com.vampon.springbootinit.service.ChartService;
 import com.vampon.springbootinit.service.InterfaceInfoService;
 import com.vampon.springbootinit.service.InterfaceLogService;
 import com.vampon.vamapicommon.model.entity.InterfaceInfo;
@@ -22,9 +26,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +47,9 @@ public class AnalysisController {
 
     @Resource
     private InterfaceLogService interfaceLogService;
+
+    @Resource
+    private ChartService chartService;
 
     @GetMapping("/top/interface/invoke")
     @AuthCheck(mustRole = "admin")
@@ -76,6 +82,42 @@ public class AnalysisController {
         Integer cost = interfaceLogService.getInterfaceInfoAverageCost();
         userInterfaceInfoLog.setInterfaceInfoAverageRequestDuration(cost);
         return ResultUtils.success(userInterfaceInfoLog);
+    }
+
+    @GetMapping("/get/statistics")
+    public BaseResponse<List<BiResponse>> getDataStatistics(HttpServletRequest request) throws InterruptedException {
+        String userData = chartService.userDataTransform();
+        String interfaceData = chartService.interfaceInfoDataTransform();
+        GenChartByAiRequest userChartByAiRequest = new GenChartByAiRequest();
+        userChartByAiRequest.setName("用户数据统计");
+        userChartByAiRequest.setGoal("展示用户数据统计");
+        userChartByAiRequest.setChartType("折线图");
+
+        GenChartByAiRequest interfaceChartByAiRequest = new GenChartByAiRequest();
+        interfaceChartByAiRequest.setName("接口调用数据统计");
+        interfaceChartByAiRequest.setGoal("展示接口调用数据统计");
+        interfaceChartByAiRequest.setChartType("折线图");
+        // 异步调用
+        BiResponse userBiResponse = chartService.genChartByAiAsync(userChartByAiRequest, userData, request);
+        Thread.sleep(5000);
+        BiResponse interfaceBiResponse = chartService.genChartByAiAsync(interfaceChartByAiRequest, interfaceData, request);
+        // 因为是异步调用，此时返回的是null，需要等待异步调用完成
+        return ResultUtils.success(Arrays.asList(userBiResponse, interfaceBiResponse));
+    }
+
+    @GetMapping("/get/latest_chart")
+    public BaseResponse<List<BiResponse>> getLatestChart(HttpServletRequest request) {
+        List<Chart> charts = chartService.getLatestChartInfo();
+        List<BiResponse> biResponses = new ArrayList<>();
+        for (Chart chart : charts) {
+            BiResponse biResponse = new BiResponse();
+            biResponse.setGenChart(chart.getGenChart());
+            biResponse.setGenResult(chart.getGenResult());
+            biResponse.setChartId(chart.getId());
+            biResponse.setName(chart.getName());
+            biResponses.add(biResponse);
+        }
+        return ResultUtils.success(biResponses);
     }
 
 

@@ -1,6 +1,6 @@
 package com.vampon.vamapigateway.utils;
 
-import com.vampon.exception.BusinessException;
+import com.vampon.vamapigateway.exception.BusinessException;
 import com.vampon.vamapicommon.common.ErrorCode;
 import javax.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
