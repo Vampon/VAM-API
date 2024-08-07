@@ -15,6 +15,7 @@ import com.vampon.springbootinit.model.dto.userinterfaceinfo.UserInterfaceInfoAd
 import com.vampon.springbootinit.model.dto.userinterfaceinfo.UserInterfaceInfoQueryRequest;
 import com.vampon.springbootinit.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
 import com.vampon.springbootinit.service.UserService;
+import com.vampon.vamapicommon.model.entity.InterfaceInfo;
 import com.vampon.vamapicommon.model.entity.User;
 import com.vampon.vamapicommon.model.entity.UserInterfaceInfo;
 import com.vampon.springbootinit.service.UserInterfaceInfoService;
@@ -60,6 +61,14 @@ public class UserInterfaceInfoController {
     public BaseResponse<Long> addUserInterfaceInfo(@RequestBody UserInterfaceInfoAddRequest userInterfaceInfoAddRequest, HttpServletRequest request) {
         if (userInterfaceInfoAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 首先需要去查询一下用户是否已经开通过接口权限
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userInterfaceInfoAddRequest.getUserId());
+        queryWrapper.eq("interfaceInfoId", userInterfaceInfoAddRequest.getInterfaceInfoId());
+        UserInterfaceInfo queryUserInterfaceInfo = userInterfaceInfoService.getOne(queryWrapper);
+        if (queryUserInterfaceInfo != null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "用户已经开通了该接口权限");
         }
         UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
         BeanUtils.copyProperties(userInterfaceInfoAddRequest, userInterfaceInfo);

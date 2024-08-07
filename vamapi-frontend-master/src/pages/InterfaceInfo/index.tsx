@@ -54,13 +54,21 @@ const handleActivate = async (record: API.UserInterfaceInfoAddRequest) => {
   const hide = message.loading('正在开通调用权限');
   if (!record) return true;
   try {
-    await addUserInterfaceInfoUsingPost({
+    const result = await addUserInterfaceInfoUsingPost({
       userId:record.userId,
       interfaceInfoId:record.interfaceInfoId
     });
-    hide();
-    message.success('开通调用权限成功');
-    return true;
+    // 根据code的值判断操作是否成功
+    if (result && result.code === 0) { // 假设成功code为'success'或200，具体值需根据实际API响应调整
+      hide(); // 隐藏某些元素或执行其他操作
+      message.success('开通调用权限成功'); // 显示成功消息
+      return true; // 返回成功标志
+    } else {
+      // 如果不是成功状态，显示错误信息
+      message.error('开通调用权限失败，错误码：' + result.code); // 显示错误消息和错误码
+      // 可以在这里添加其他失败后的处理逻辑
+      return false; // 返回失败标志
+    }
   } catch (error: any) {
     hide();
     message.error('开通调用权限失败，' + error.message);
