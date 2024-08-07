@@ -32,7 +32,7 @@ VAM API接口开放平台是一个为用户和开发者提供丰富的API接口�
 - [**VAM API 后端 🏘️**](https://github.com/Vampon/VAM-API/tree/main/vamapi-backend)
 - [**VAM API 前端 🏘**️](https://github.com/Vampon/VAM-API/tree/main/vamapi-frontend-master)
 - **[VAM API-SDK](https://github.com/Vampon/VAM-API/tree/main/vamapi-client-sdk)** 🛠
-- **[VAM API 接口开放平台 🔗](https://vamapi.cloud/)**
+- **[VAM API 接口开放平台 🔗](http://vamapi.cloud/)**
 - **[VAM API 开发者文档 📖](https://vampon.github.io/VAM-API-DOC)**
 
 ## 目录结构 📑
